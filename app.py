@@ -239,7 +239,15 @@ with aba3:
 
         # Histórico Escolar
         if historico_pdf is not None:
-            merger.append(PdfReader(BytesIO(historico_pdf.read())))
+            capa_buffer = BytesIO()
+            capa_doc = SimpleDocTemplate(capa_buffer, pagesize=A4)
+            capa_styles = getSampleStyleSheet()
+            capa_elements = [Spacer(1, 250), Paragraph("Histórico Escolar", capa_styles['Title'])]
+            capa_doc.build(capa_elements)
+            capa_buffer.seek(0)
+            merger.append(PdfReader(capa_buffer))
+            historico_pdf.seek(0)
+            merger.append(PdfReader(historico_pdf))
 
         # Comprovantes da pontuação (em ordem da tabela)
         for i in range(len(df)):
