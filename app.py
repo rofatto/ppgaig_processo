@@ -51,6 +51,12 @@ with aba2:
         "Linha 2: Sistemas integrados de produção vegetal"
     ])
 
+    st.markdown("""
+    📝 **Classifique as subáreas por ordem de preferência:**
+    - Utilize os botões “+” e “–” para atribuir uma ordem de **1 (mais preferida)** a **5 (menos preferida)** – *caso tenha selecionado a Linha 1*.
+    - Caso tenha selecionado a Linha 2, a ordem vai de **1 a 13**.
+    - Cada número de ordem só pode ser usado uma vez.
+    """)
     subareas_l1 = [
         "Sensoriamento Remoto de Sistemas Agrícolas",
         "Desenvolvimento de sistemas de mapeamento móvel. Utilização de aeronaves remotamente pilotadas na Fitotecnia",
