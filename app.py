@@ -44,7 +44,7 @@ with aba2:
     from datetime import date
 
     data_nascimento = st.date_input("Data de Nascimento (ANO/MÊS/DIA)", value=date(1990, 1, 1), min_value=date(1900, 1, 1), max_value=date.today())
-    ano_conclusao = st.number_input("Ano de Conclusão", 1950, 2100)
+    ano_conclusao = st.number_input("Ano de Conclusão do Curso de Graduação", 1950, 2100)
 
     linha = st.radio("Selecione apenas 1 (uma) linha de pesquisa:", [
         "Linha 1: Desenvolvimento e aplicações de métodos em informações geoespaciais",
