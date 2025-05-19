@@ -24,7 +24,7 @@ with aba1:
                                             "Pessoas com Deficiência", 
                                             "Políticas Humanitárias"])
 
-    identidade_pdf = st.file_uploader("Documento de identidade (com CPF ou RG e CPF mesclados em um único PDF) *", type="pdf")
+    identidade_pdf = st.file_uploader("Documento de identidade (com CPF ou CPF separado mesclado) *", type="pdf")
     registro_civil_pdf = st.file_uploader("Registro civil (nascimento ou casamento) *", type="pdf")
     quitacao_pdf = st.file_uploader("Comprovante de quitação eleitoral *", type="pdf")
     diploma_pdf = st.file_uploader("Diploma ou Certificado de Conclusão da Graduação *", type="pdf")
@@ -43,8 +43,8 @@ with aba2:
     email = st.text_input("Email")
     from datetime import date
 
-    data_nascimento = st.date_input("Data de Nascimento (ANO/MÊS/DIA)", value=date(1990, 1, 1), min_value=date(1900, 1, 1), max_value=date.today())
-    ano_conclusao = st.number_input("Ano de Conclusão do Curso de Graduação", 1950, 2100)
+    data_nascimento = st.date_input("Data de Nascimento", value=date(1990, 1, 1), min_value=date(1900, 1, 1), max_value=date.today())
+    ano_conclusao = st.number_input("Ano de Conclusão", 1950, 2100)
 
     linha = st.radio("Selecione apenas 1 (uma) linha de pesquisa:", [
         "Linha 1: Desenvolvimento e aplicações de métodos em informações geoespaciais",
@@ -204,5 +204,36 @@ with aba3:
         elements.append(Paragraph(f"<b>Pontuação Total do Currículo:</b> {pontuacao_total:.2f} pontos", styles['Normal']))
 
         doc.build(elements)
+
+        # Agora mesclar anexos usando PyPDF2
+        buffer.seek(0)
+        merger = PdfMerger()
+        merger.append(PdfReader(buffer))
+
+        # Documentos de inscrição (em ordem)
+        for label, pdf_file in [
+            ("Documento de identidade", identidade_pdf),
+            ("Registro civil", registro_civil_pdf),
+            ("Comprovante de quitação eleitoral", quitacao_pdf),
+            ("Diploma ou Certificado", diploma_pdf),
+            ("Certificado de reservista", reservista_pdf),
+            ("Comprovante de quota", quota_pdf)
+        ]:
+            if pdf_file is not None:
+                merger.append(PdfReader(BytesIO(pdf_file.read())))
+
+        # Histórico Escolar
+        if historico_pdf is not None:
+            merger.append(PdfReader(BytesIO(historico_pdf.read())))
+
+        # Comprovantes da pontuação (em ordem da tabela)
+        for i in range(len(df)):
+            if df.at[i, "Quantidade"] > 0 and comprovantes[df.at[i, "Item"]] is not None:
+                merger.append(PdfReader(BytesIO(comprovantes[df.at[i, "Item"]].read())))
+
+        final_output = BytesIO()
+        merger.write(final_output)
+        merger.close()
+
         st.success("✅ PDF gerado com sucesso!")
         st.download_button("⬇️ Baixar PDF Consolidado", buffer.getvalue(), file_name="formulario_ppgaig.pdf", mime="application/pdf")
