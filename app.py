@@ -176,9 +176,10 @@ with aba3:
             Paragraph(f"<b>Linha Selecionada:</b> {linha}", styles['Normal']),
         ]
         subarea_table = Table(
-            [["Subárea", "Ordem"]] + [[Paragraph(sub, styles['Normal']), ordem] for sub, ordem in zip(subareas, ordem_pref)],
-            colWidths=[300, 60],
-            hAlign='LEFT')
+    [["Subárea selecionada em ordem de preferência"]] +
+    [[Paragraph(sub, styles['Normal'])] for _, sub in sorted(zip(ordem_pref, subareas))],
+    colWidths=[420],
+    hAlign='LEFT')
         subarea_table.setStyle(TableStyle([
             ('VALIGN', (0, 0), (-1, -1), 'TOP'),
             ('FONTSIZE', (0,0), (-1,-1), 8),
