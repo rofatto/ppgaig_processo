@@ -24,7 +24,7 @@ with aba1:
                                             "Pessoas com Deficiência", 
                                             "Políticas Humanitárias"])
 
-    identidade_pdf = st.file_uploader("Documento de identidade (com CPF ou CPF separado mesclado) *", type="pdf")
+    identidade_pdf = st.file_uploader("Documento de identidade (com CPF ou RG e CPF separados, mas mesclados em um único PDF) *", type="pdf")
     registro_civil_pdf = st.file_uploader("Registro civil (nascimento ou casamento) *", type="pdf")
     quitacao_pdf = st.file_uploader("Comprovante de quitação eleitoral *", type="pdf")
     diploma_pdf = st.file_uploader("Diploma ou Certificado de Conclusão da Graduação *", type="pdf")
@@ -43,8 +43,8 @@ with aba2:
     email = st.text_input("Email")
     from datetime import date
 
-    data_nascimento = st.date_input("Data de Nascimento", value=date(1990, 1, 1), min_value=date(1900, 1, 1), max_value=date.today())
-    ano_conclusao = st.number_input("Ano de Conclusão", 1950, 2100)
+    data_nascimento = st.date_input("Data de Nascimento (ANO/MÊS/DIA)", value=date(1990, 1, 1), min_value=date(1900, 1, 1), max_value=date.today())
+    ano_conclusao = st.number_input("Ano de Conclusão do Curso de Graduação", 1950, 2100)
 
     linha = st.radio("Selecione apenas 1 (uma) linha de pesquisa:", [
         "Linha 1: Desenvolvimento e aplicações de métodos em informações geoespaciais",
@@ -175,8 +175,12 @@ with aba3:
             Paragraph(f"<b>Ano de Conclusão:</b> {ano_conclusao}", styles['Normal']),
             Paragraph(f"<b>Linha Selecionada:</b> {linha}", styles['Normal']),
         ]
-        subarea_table = Table([["Subárea", "Ordem"]] + list(zip(subareas, ordem_pref)), colWidths=[300, 60])
+        subarea_table = Table(
+            [["Subárea", "Ordem"]] + [[Paragraph(sub, styles['Normal']), ordem] for sub, ordem in zip(subareas, ordem_pref)],
+            colWidths=[300, 60],
+            hAlign='LEFT')
         subarea_table.setStyle(TableStyle([
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
             ('FONTSIZE', (0,0), (-1,-1), 8),
             ('FONTSIZE', (0,0), (-1,-1), 9),
             ('GRID', (0,0), (-1,-1), 0.5, colors.black),
