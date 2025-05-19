@@ -175,8 +175,9 @@ with aba3:
             Paragraph(f"<b>Ano de Conclusão:</b> {ano_conclusao}", styles['Normal']),
             Paragraph(f"<b>Linha Selecionada:</b> {linha}", styles['Normal']),
         ]
-        subarea_table = Table([["Subárea", "Ordem"]] + list(zip(subareas, ordem_pref)), colWidths=[400, 80])
+        subarea_table = Table([["Subárea", "Ordem"]] + list(zip(subareas, ordem_pref)), colWidths=[300, 60])
         subarea_table.setStyle(TableStyle([
+            ('FONTSIZE', (0,0), (-1,-1), 8),
             ('FONTSIZE', (0,0), (-1,-1), 9),
             ('GRID', (0,0), (-1,-1), 0.5, colors.black),
             ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
@@ -211,7 +212,7 @@ with aba3:
         merger = PdfMerger()
         merger.append(PdfReader(buffer))
 
-        # Documentos de inscrição (em ordem)
+        # Documentos de inscrição (com capa descritiva)
         for label, pdf_file in [
             ("Documento de identidade", identidade_pdf),
             ("Registro civil", registro_civil_pdf),
@@ -221,6 +222,14 @@ with aba3:
             ("Comprovante de quota", quota_pdf)
         ]:
             if pdf_file is not None:
+                # Criar capa descritiva
+                capa_buffer = BytesIO()
+                capa_doc = SimpleDocTemplate(capa_buffer, pagesize=A4)
+                capa_styles = getSampleStyleSheet()
+                capa_elements = [Spacer(1, 250), Paragraph(label, capa_styles['Title'])]
+                capa_doc.build(capa_elements)
+                capa_buffer.seek(0)
+                merger.append(PdfReader(capa_buffer))
                 merger.append(PdfReader(BytesIO(pdf_file.read())))
 
         # Histórico Escolar
@@ -230,7 +239,15 @@ with aba3:
         # Comprovantes da pontuação (em ordem da tabela)
         for i in range(len(df)):
             if df.at[i, "Quantidade"] > 0 and comprovantes[df.at[i, "Item"]] is not None:
-                merger.append(PdfReader(BytesIO(comprovantes[df.at[i, "Item"]].read())))
+                item_label = df.at[i, "Item"]
+                capa_buffer = BytesIO()
+                capa_doc = SimpleDocTemplate(capa_buffer, pagesize=A4)
+                capa_styles = getSampleStyleSheet()
+                capa_elements = [Spacer(1, 250), Paragraph(f"Comprovante: {item_label}", capa_styles['Title'])]
+                capa_doc.build(capa_elements)
+                capa_buffer.seek(0)
+                merger.append(PdfReader(capa_buffer))
+                merger.append(PdfReader(BytesIO(comprovantes[item_label].read())))
 
         final_output = BytesIO()
         merger.write(final_output)
