@@ -24,23 +24,24 @@ with aba1:
                                             "Pessoas com Deficiência", 
                                             "Políticas Humanitárias"])
 
-    identidade_pdf = st.file_uploader("Documento de identidade (com CPF ou CPF separado mesclado)", type="pdf")
-    registro_civil_pdf = st.file_uploader("Registro civil (nascimento ou casamento)", type="pdf")
-    quitacao_pdf = st.file_uploader("Comprovante de quitação eleitoral", type="pdf")
+    identidade_pdf = st.file_uploader("Documento de identidade (com CPF ou CPF separado mesclado) *", type="pdf")
+    registro_civil_pdf = st.file_uploader("Registro civil (nascimento ou casamento) *", type="pdf")
+    quitacao_pdf = st.file_uploader("Comprovante de quitação eleitoral *", type="pdf")
+    diploma_pdf = st.file_uploader("Diploma ou Certificado de Conclusão da Graduação *", type="pdf")
 
     reservista_pdf = None
     if sexo == "Masculino":
-        reservista_pdf = st.file_uploader("Certificado de reservista", type="pdf")
+        reservista_pdf = st.file_uploader("Certificado de reservista *", type="pdf")
 
     quota_pdf = None
     if quota != "Ampla Concorrência":
-        quota_pdf = st.file_uploader("Comprovante para quotas", type="pdf")
+        quota_pdf = st.file_uploader("Comprovante para quotas *", type="pdf")
 
 # Seleção da Linha de Pesquisa
 with aba2:
     st.header("Seleção da Linha de Pesquisa")
     email = st.text_input("Email")
-    data_nascimento = st.date_input("Data de Nascimento")
+    data_nascimento = st.date_input("Data de Nascimento", format="%d/%m/%Y")
     ano_conclusao = st.number_input("Ano de Conclusão", 1950, 2100)
 
     linha = st.radio("Selecione apenas 1 (uma) linha de pesquisa:", [
@@ -87,6 +88,7 @@ with aba2:
 with aba3:
     st.header("Pontuação do Currículo")
 
+    st.markdown("📝 **Atenção:** Os comprovantes de um dado item devem ser enviados em **um único arquivo PDF**. Por exemplo, se você tem dois artigos referentes ao item 1.1, estes devem ser mesclados em **um único arquivo PDF** a ser enviado para o item 1.1.")
     st.markdown("### Histórico Escolar do(a) Candidato(a)")
     historico_media = st.number_input("Média aritmética das disciplinas cursadas na graduação:", min_value=0.0, max_value=10.0, step=0.01, format="%.2f")
     historico_pdf = st.file_uploader("Anexe o Histórico Escolar (PDF obrigatório)", type="pdf", key="historico")
@@ -134,47 +136,71 @@ with aba3:
             df.at[i, "Quantidade"] = st.number_input(f"{item}", min_value=0, max_value=max_qtd, step=1, key=f"qtd_{i}")
         with col2:
             comprovantes[item] = st.file_uploader(f"Comprovante único em PDF de '{item}'", type="pdf", key=f"file_{i}")
-        df.at[i, "Total"] = ponto * df.at[i, "Quantidade"]
 
+    for i in range(len(df)):
+        if df.at[i, "Quantidade"] > 0 and comprovantes[df.at[i, "Item"]] is None:
+            st.warning(f"Você preencheu o item '{df.at[i, 'Item']}', mas não anexou o comprovante correspondente. Isso é obrigatório.")
+
+    df["Total"] = df["Quantidade"] * df["Pontuação por Item"]
     pontuacao_total = df["Total"].sum()
     st.subheader(f"📈 Pontuação Final: {pontuacao_total:.2f} pontos")
 
-    if st.button("📥 Gerar PDF Único com Todas as Informações"):
+    if st.button("📄 Gerar Relatório Final em PDF"):
         buffer = BytesIO()
-        doc = SimpleDocTemplate(buffer, pagesize=A4)
+        doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=40)
         styles = getSampleStyleSheet()
-        elements = [Paragraph("Relatório Geral do(a) Candidato(a)", styles['Title']), Spacer(1, 12)]
+        elements = []
 
-        elements += [Paragraph(f"<b>Nome:</b> {nome}", styles['Normal']),
-                     Paragraph(f"<b>CPF:</b> {cpf}", styles['Normal']),
-                     Paragraph(f"<b>Sexo:</b> {sexo}", styles['Normal']),
-                     Paragraph(f"<b>Modalidade:</b> {modalidade}", styles['Normal']),
-                     Paragraph(f"<b>Quota:</b> {quota}", styles['Normal'])]
+        # Seção 1: Inscrição
+        elements.append(Paragraph("Inscrição", styles['Title']))
+        elements.append(Spacer(1, 12))
+        elements += [
+            Paragraph(f"<b>Nome:</b> {nome}", styles['Normal']),
+            Paragraph(f"<b>CPF:</b> {cpf}", styles['Normal']),
+            Paragraph(f"<b>Sexo:</b> {sexo}", styles['Normal']),
+            Paragraph(f"<b>Modalidade:</b> {modalidade}", styles['Normal']),
+            Paragraph(f"<b>Quota:</b> {quota}", styles['Normal']),
+        ]
 
         elements.append(PageBreak())
-        elements.append(Paragraph("Seleção da Linha de Pesquisa", styles['Heading2']))
-        elements += [Paragraph(f"<b>Email:</b> {email}", styles['Normal']),
-                     Paragraph(f"<b>Data de Nascimento:</b> {data_nascimento.strftime('%d/%m/%Y')}", styles['Normal']),
-                     Paragraph(f"<b>Ano de Conclusão:</b> {ano_conclusao}", styles['Normal']),
-                     Paragraph(f"<b>Linha Selecionada:</b> {linha}", styles['Normal'])]
-        subarea_table = Table([["Subárea", "Ordem"]] + list(zip(subareas, ordem_pref)), colWidths=[350, 60])
-        subarea_table.setStyle(TableStyle([('GRID', (0,0), (-1,-1), 0.5, colors.black)]))
+
+        # Seção 2: Linha de Pesquisa
+        elements.append(Paragraph("Seleção da Linha de Pesquisa", styles['Title']))
+        elements.append(Spacer(1, 12))
+        elements += [
+            Paragraph(f"<b>Email:</b> {email}", styles['Normal']),
+            Paragraph(f"<b>Data de Nascimento:</b> {data_nascimento.strftime('%d/%m/%Y')}", styles['Normal']),
+            Paragraph(f"<b>Ano de Conclusão:</b> {ano_conclusao}", styles['Normal']),
+            Paragraph(f"<b>Linha Selecionada:</b> {linha}", styles['Normal']),
+        ]
+        subarea_table = Table([["Subárea", "Ordem"]] + list(zip(subareas, ordem_pref)), colWidths=[440, 60])
+        subarea_table.setStyle(TableStyle([
+            ('GRID', (0,0), (-1,-1), 0.5, colors.black),
+            ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
+            ('ALIGN', (1,1), (-1,-1), 'CENTER')
+        ]))
+        elements.append(Spacer(1, 12))
         elements.append(subarea_table)
 
         elements.append(PageBreak())
-        elements.append(Paragraph("Pontuação do Currículo", styles['Heading2']))
-        table_data = [["Item", "Quantidade", "Total"]] + df[df["Quantidade"] > 0][["Item", "Quantidade", "Total"]].values.tolist()
-        pont_table = Table(table_data, hAlign='LEFT', colWidths=[280, 60, 60])
+
+        # Seção 3: Pontuação
+        elements.append(Paragraph("Pontuação do Currículo", styles['Title']))
+        elements.append(Spacer(1, 12))
+        pont_table = Table(
+            [["Item", "Quantidade", "Total"]] + df[df["Quantidade"] > 0][["Item", "Quantidade", "Total"]].values.tolist(),
+            colWidths=[350, 70, 70]
+        )
         pont_table.setStyle(TableStyle([
             ('GRID', (0,0), (-1,-1), 0.5, colors.black),
             ('BACKGROUND', (0,0), (-1,0), colors.grey),
             ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke)
         ]))
         elements.append(pont_table)
-        elements.append(Paragraph(f"<b>Histórico Escolar - Média:</b> {historico_media:.2f}", styles['Normal']))
-        elements.append(Paragraph(f"<b>Pontuação Total:</b> {pontuacao_total:.2f} pontos", styles['Normal']))
+        elements.append(Spacer(1, 12))
+        elements.append(Paragraph(f"<b>Média do Histórico Escolar:</b> {historico_media:.2f}", styles['Normal']))
+        elements.append(Paragraph(f"<b>Pontuação Total do Currículo:</b> {pontuacao_total:.2f} pontos", styles['Normal']))
 
         doc.build(elements)
-        st.success("✅ PDF completo gerado!")
-        st.download_button("⬇️ Baixar PDF Geral", buffer.getvalue(), file_name="relatorio_geral.pdf", mime="application/pdf")
-
+        st.success("✅ PDF gerado com sucesso!")
+        st.download_button("⬇️ Baixar PDF Consolidado", buffer.getvalue(), file_name="formulario_ppgaig.pdf", mime="application/pdf")
