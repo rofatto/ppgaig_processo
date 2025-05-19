@@ -41,7 +41,7 @@ with aba1:
 with aba2:
     st.header("Seleção da Linha de Pesquisa")
     email = st.text_input("Email")
-    data_nascimento = st.date_input("Data de Nascimento", format="%d/%m/%Y")
+    data_nascimento = st.date_input("Data de Nascimento")
     ano_conclusao = st.number_input("Ano de Conclusão", 1950, 2100)
 
     linha = st.radio("Selecione apenas 1 (uma) linha de pesquisa:", [
