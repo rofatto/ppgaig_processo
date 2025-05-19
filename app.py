@@ -1,9 +1,10 @@
 import streamlit as st
 import pandas as pd
+import os
 from io import BytesIO
-from PyPDF2 import PdfMerger
+from PyPDF2 import PdfMerger, PdfReader, PdfWriter
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Table, TableStyle, Spacer, PageBreak
 from reportlab.lib.pagesizes import A4
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib import colors
 
@@ -86,66 +87,93 @@ with aba2:
 with aba3:
     st.header("Pontuação do Currículo")
 
-    historico_media = st.number_input("Média das disciplinas", min_value=0.0, max_value=10.0, step=0.01)
-    historico_pdf = st.file_uploader("Histórico Escolar (obrigatório)", type="pdf")
+    st.markdown("### Histórico Escolar do(a) Candidato(a)")
+    historico_media = st.number_input("Média aritmética das disciplinas cursadas na graduação:", min_value=0.0, max_value=10.0, step=0.01, format="%.2f")
+    historico_pdf = st.file_uploader("Anexe o Histórico Escolar (PDF obrigatório)", type="pdf", key="historico")
 
-    data_curriculo = [
-        ["Artigo percentil ≥ 75", 10.0, 0], ["Artigo 50 ≤ percentil < 75", 8.0, 0],
-        ["Artigo 25 ≤ percentil < 50", 6.0, 12.0], ["Artigo percentil < 25", 2.0, 4.0],
+    data = [
+        ["1.1 Artigo com percentil ≥ 75", 10.0, 0],
+        ["1.2 Artigo com 50 ≤ percentil < 75", 8.0, 0],
+        ["1.3 Artigo com 25 ≤ percentil < 50", 6.0, 12.0],
+        ["1.4 Artigo com percentil < 25", 2.0, 4.0],
+        ["1.5 Artigo sem percentil", 1.0, 2.0],
+        ["2.1 Trabalhos completos em eventos (≥2p)", 0.6, 3.0],
+        ["2.2 Resumos publicados (<2p)", 0.3, 1.5],
+        ["3.1 Capítulo de livro ou boletim técnico", 1.0, 4.0],
+        ["3.2 Livro na íntegra", 4.0, 4.0],
+        ["4. Curso de especialização (min 320h)", 1.0, 1.0],
+        ["5. Monitoria de disciplina", 0.6, 2.4],
+        ["6.1 Iniciação científica com bolsa", 0.4, 16.0],
+        ["6.2 Iniciação científica sem bolsa", 0.2, 8.0],
+        ["7.1 Software/Aplicativo (INPI)", 1.0, 5.0],
+        ["7.2 Patente (INPI)", 1.0, 5.0],
+        ["7.3 Registro de cultivar (MAPA)", 1.0, 5.0],
+        ["8. Orientação de alunos (IC/TCC/extensão)", 1.0, 2.0],
+        ["9. Participação em bancas (TCC/especialização)", 0.25, 1.0],
+        ["10.1 Docência no Ensino Superior", 1.0, 8.0],
+        ["10.2 Docência no Fundamental/Médio", 0.3, 3.0],
+        ["10.3 Atuação em EAD", 0.2, 2.0],
+        ["10.4 Atividades profissionais relacionadas", 0.25, 4.0],
     ]
 
-    df_curriculo = pd.DataFrame(data_curriculo, columns=["Item", "Pontuação por Item", "Pontuação Máxima"])
-    df_curriculo["Quantidade"] = [st.number_input(i, 0, 10, key=f"curriculo_{i}") for i in df_curriculo["Item"]]
+    df = pd.DataFrame(data, columns=["Item", "Pontuação por Item", "Pontuação Máxima"])
+    df["Quantidade"] = 0
+    df["Total"] = 0.0
+    comprovantes = {}
 
-# Geração do PDF Único
-if st.button("📥 Gerar PDF Completo"):
-    buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=40)
-    styles = getSampleStyleSheet()
-    elements = []
+    for i in range(len(df)):
+        item = df.at[i, "Item"]
+        ponto = df.at[i, "Pontuação por Item"]
+        maximo = df.at[i, "Pontuação Máxima"]
+        if maximo > 0:
+            max_qtd = round(maximo / ponto)
+        else:
+            max_qtd = 999
+        col1, col2 = st.columns([3, 2])
+        with col1:
+            df.at[i, "Quantidade"] = st.number_input(f"{item}", min_value=0, max_value=max_qtd, step=1, key=f"qtd_{i}")
+        with col2:
+            comprovantes[item] = st.file_uploader(f"Comprovante único em PDF de '{item}'", type="pdf", key=f"file_{i}")
+        df.at[i, "Total"] = ponto * df.at[i, "Quantidade"]
 
-    # Inscrição
-    elements.append(Paragraph("Inscrição", styles['Title']))
-    elements.append(Spacer(1, 6))
-    elements += [Paragraph(f"<b>Nome:</b> {nome}", styles['Normal']),
-                 Paragraph(f"<b>CPF:</b> {cpf}", styles['Normal']),
-                 Paragraph(f"<b>Sexo:</b> {sexo}", styles['Normal']),
-                 Paragraph(f"<b>Modalidade:</b> {modalidade}", styles['Normal']),
-                 Paragraph(f"<b>Quota:</b> {quota}", styles['Normal'])]
+    pontuacao_total = df["Total"].sum()
+    st.subheader(f"📈 Pontuação Final: {pontuacao_total:.2f} pontos")
 
-    elements.append(PageBreak())
-    elements.append(Paragraph("Seleção da Linha de Pesquisa", styles['Title']))
-    elements.append(Spacer(1, 6))
-    elements += [Paragraph(f"<b>Email:</b> {email}", styles['Normal']),
-                 Paragraph(f"<b>Data de Nascimento:</b> {data_nascimento.strftime('%d/%m/%Y')}", styles['Normal']),
-                 Paragraph(f"<b>Ano de Conclusão:</b> {ano_conclusao}", styles['Normal']),
-                 Paragraph(f"<b>Linha Selecionada:</b> {linha}", styles['Normal'])]
+    if st.button("📥 Gerar PDF Único com Todas as Informações"):
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4)
+        styles = getSampleStyleSheet()
+        elements = [Paragraph("Relatório Geral do(a) Candidato(a)", styles['Title']), Spacer(1, 12)]
 
-    tabela_selecao = [["Subárea", "Ordem"]] + list(zip(subareas, ordem_pref))
-    table = Table(tabela_selecao, hAlign='LEFT', colWidths=[320, 60])
-    table.setStyle(TableStyle([
-        ('GRID', (0,0), (-1,-1), 0.5, colors.black),
-        ('BACKGROUND', (0,0), (-1,0), colors.grey),
-        ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
-    ]))
-    elements.append(table)
+        elements += [Paragraph(f"<b>Nome:</b> {nome}", styles['Normal']),
+                     Paragraph(f"<b>CPF:</b> {cpf}", styles['Normal']),
+                     Paragraph(f"<b>Sexo:</b> {sexo}", styles['Normal']),
+                     Paragraph(f"<b>Modalidade:</b> {modalidade}", styles['Normal']),
+                     Paragraph(f"<b>Quota:</b> {quota}", styles['Normal'])]
 
-    elements.append(PageBreak())
-    elements.append(Paragraph("Pontuação do Currículo", styles['Title']))
-    elements.append(Spacer(1, 6))
+        elements.append(PageBreak())
+        elements.append(Paragraph("Seleção da Linha de Pesquisa", styles['Heading2']))
+        elements += [Paragraph(f"<b>Email:</b> {email}", styles['Normal']),
+                     Paragraph(f"<b>Data de Nascimento:</b> {data_nascimento.strftime('%d/%m/%Y')}", styles['Normal']),
+                     Paragraph(f"<b>Ano de Conclusão:</b> {ano_conclusao}", styles['Normal']),
+                     Paragraph(f"<b>Linha Selecionada:</b> {linha}", styles['Normal'])]
+        subarea_table = Table([["Subárea", "Ordem"]] + list(zip(subareas, ordem_pref)), colWidths=[350, 60])
+        subarea_table.setStyle(TableStyle([('GRID', (0,0), (-1,-1), 0.5, colors.black)]))
+        elements.append(subarea_table)
 
-    tabela_curriculo = [["Item", "Quantidade"]] + df_curriculo[["Item", "Quantidade"]].values.tolist()
-    table2 = Table(tabela_curriculo, hAlign='LEFT', colWidths=[350, 50])
-    table2.setStyle(TableStyle([
-        ('GRID', (0,0), (-1,-1), 0.5, colors.black),
-        ('BACKGROUND', (0,0), (-1,0), colors.grey),
-        ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
-    ]))
-    elements.append(table2)
-    elements.append(Spacer(1, 6))
-    elements.append(Paragraph(f"<b>Média do Histórico Escolar:</b> {historico_media:.2f}", styles['Normal']))
+        elements.append(PageBreak())
+        elements.append(Paragraph("Pontuação do Currículo", styles['Heading2']))
+        table_data = [["Item", "Quantidade", "Total"]] + df[df["Quantidade"] > 0][["Item", "Quantidade", "Total"]].values.tolist()
+        pont_table = Table(table_data, hAlign='LEFT', colWidths=[280, 60, 60])
+        pont_table.setStyle(TableStyle([
+            ('GRID', (0,0), (-1,-1), 0.5, colors.black),
+            ('BACKGROUND', (0,0), (-1,0), colors.grey),
+            ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke)
+        ]))
+        elements.append(pont_table)
+        elements.append(Paragraph(f"<b>Histórico Escolar - Média:</b> {historico_media:.2f}", styles['Normal']))
+        elements.append(Paragraph(f"<b>Pontuação Total:</b> {pontuacao_total:.2f} pontos", styles['Normal']))
 
-    doc.build(elements)
-
-    st.success("✅ PDF completo gerado!")
-    st.download_button("⬇️ Baixar PDF", buffer.getvalue(), "inscricao_completa.pdf", "application/pdf")
+        doc.build(elements)
+        st.success("✅ PDF completo gerado!")
+        st.download_button("⬇️ Baixar PDF Geral", buffer.getvalue(), file_name="relatorio_geral.pdf", mime="application/pdf")
