@@ -20,9 +20,9 @@ with aba1:
     cpf = st.text_input("CPF")
     sexo = st.radio("Sexo", ["Masculino", "Feminino", "Prefiro não identificar"])
     modalidade = st.radio("Modalidade", ["Regular", "Especial"])
-    quota = st.selectbox("Tipo de Quota", ["Ampla Concorrência", "Pretos ou Pardos e Indígenas", 
+    quota = st.selectbox("Tipo de Quota", ["Ampla Concorrência", "Pretos, Pardos, Indígenas", 
                                             "Pessoas com Deficiência", 
-                                            "Políticas Humanitárias"])
+                                            "Pessoas sob políticas humanitárias no Brasil"])
 
     identidade_pdf = st.file_uploader("Documento de identidade (com CPF ou RG e CPF separados, mas mesclados em um único PDF) *", type="pdf")
     registro_civil_pdf = st.file_uploader("Registro civil (nascimento ou casamento) *", type="pdf")
