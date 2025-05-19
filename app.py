@@ -42,10 +42,36 @@ with aba2:
     data_nascimento = st.date_input("Data de Nascimento")
     ano_conclusao = st.number_input("Ano de Conclusão", 1950, 2100)
 
-    linha = st.radio("Linha de pesquisa", ["Linha 1: Geoespacial", "Linha 2: Produção vegetal"])
+    linha = st.radio("Selecione apenas 1 (uma) linha de pesquisa:", [
+        "Linha 1: Desenvolvimento e aplicações de métodos em informações geoespaciais",
+        "Linha 2: Sistemas integrados de produção vegetal"
+    ])
 
-    subareas = ["Subárea A", "Subárea B", "Subárea C"] if linha == "Linha 1: Geoespacial" else ["Subárea X", "Subárea Y"]
+    subareas_l1 = [
+        "Sensoriamento Remoto de Sistemas Agrícolas",
+        "Desenvolvimento de sistemas de mapeamento móvel. Utilização de aeronaves remotamente pilotadas na Fitotecnia",
+        "Sistemas computacionais inteligentes na agricultura e informações geoespaciais",
+        "Posicionamento por GNSS. Modelagem e análise de dados geoespaciais. Controle de qualidade de informações geoespaciais",
+        "Sensores Aplicados a Agricultura de Precisão"
+    ]
 
+    subareas_l2 = [
+        "Biotecnologia na agricultura",
+        "Recursos florestais",
+        "Nutrição, Manejo e cultura de tecidos em hortaliças e plantas medicinais",
+        "Micologia Aplicada. Patologia Florestal. Patologia de Sementes. Sensoriamento remoto aplicado à Patologia Florestal",
+        "Nutrição mineral e metabolismo de plantas",
+        "Manejo integrado de plantas daninhas. Uso de herbicidas na Agricultura. Sistemas de informação para controle de plantas",
+        "Microbiologia agrícola",
+        "Controle biológico de doenças de plantas. Controle biológico de plantas daninhas. Sensoriamento remoto aplicado à Fitopatologia",
+        "Mecanização agrícola. Tecnologia de aplicação de precisão",
+        "Manejo da água em sistemas agrícolas irrigados",
+        "Melhoramento genético de hortaliças e fenotipagem de alto desempenho",
+        "Entomologia agrícola: manejo integrado, controle biológico, controle microbiano",
+        "Tecnologias aplicadas à cafeicultura"
+    ]
+
+    subareas = subareas_l1 if "Linha 1" in linha else subareas_l2
     ordem_pref = [st.number_input(sub, 1, len(subareas), key=f"sub_{sub}") for sub in subareas]
 
 # Pontuação do Currículo
