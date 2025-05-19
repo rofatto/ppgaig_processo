@@ -24,7 +24,7 @@ with aba1:
                                             "Pessoas com Deficiência", 
                                             "Políticas Humanitárias"])
 
-    identidade_pdf = st.file_uploader("Documento de identidade (com CPF ou CPF separado mesclado) *", type="pdf")
+    identidade_pdf = st.file_uploader("Documento de identidade (com CPF ou RG e CPF mesclados em um único PDF) *", type="pdf")
     registro_civil_pdf = st.file_uploader("Registro civil (nascimento ou casamento) *", type="pdf")
     quitacao_pdf = st.file_uploader("Comprovante de quitação eleitoral *", type="pdf")
     diploma_pdf = st.file_uploader("Diploma ou Certificado de Conclusão da Graduação *", type="pdf")
@@ -43,7 +43,7 @@ with aba2:
     email = st.text_input("Email")
     from datetime import date
 
-    data_nascimento = st.date_input("Data de Nascimento", value=date(1990, 1, 1), min_value=date(1900, 1, 1), max_value=date.today())
+    data_nascimento = st.date_input("Data de Nascimento (ANO/MÊS/DIA)", value=date(1990, 1, 1), min_value=date(1900, 1, 1), max_value=date.today())
     ano_conclusao = st.number_input("Ano de Conclusão", 1950, 2100)
 
     linha = st.radio("Selecione apenas 1 (uma) linha de pesquisa:", [
