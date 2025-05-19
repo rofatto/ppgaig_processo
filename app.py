@@ -41,7 +41,9 @@ with aba1:
 with aba2:
     st.header("Seleção da Linha de Pesquisa")
     email = st.text_input("Email")
-    data_nascimento = st.date_input("Data de Nascimento")
+    from datetime import date
+
+    data_nascimento = st.date_input("Data de Nascimento", value=date(1990, 1, 1), min_value=date(1900, 1, 1), max_value=date.today())
     ano_conclusao = st.number_input("Ano de Conclusão", 1950, 2100)
 
     linha = st.radio("Selecione apenas 1 (uma) linha de pesquisa:", [
