@@ -53,8 +53,8 @@ with aba2:
 
     st.markdown("""
     📝 **Classifique as subáreas por ordem de preferência:**
-    - Utilize os botões “+” e “–” para atribuir uma ordem de **1 (mais preferida)** a **5 (menos preferida)** – *caso tenha selecionado a Linha 1*.
-    - Caso tenha selecionado a Linha 2, a ordem vai de **1 a 13**.
+    - Utilize os botões “+” e “–” para atribuir uma ordem de **1 (maior interesse)** a **5 (menor interesse)** – *caso tenha selecionado a Linha 1*.
+    - Caso tenha selecionado a Linha 2, a ordem vai de **1 (maior interesse) a 13 (menor interesse)**.
     - Cada número de ordem só pode ser usado uma vez.
     """)
     subareas_l1 = [
