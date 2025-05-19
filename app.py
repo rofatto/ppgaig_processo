@@ -175,8 +175,9 @@ with aba3:
             Paragraph(f"<b>Ano de Conclusão:</b> {ano_conclusao}", styles['Normal']),
             Paragraph(f"<b>Linha Selecionada:</b> {linha}", styles['Normal']),
         ]
-        subarea_table = Table([["Subárea", "Ordem"]] + list(zip(subareas, ordem_pref)), colWidths=[440, 60])
+        subarea_table = Table([["Subárea", "Ordem"]] + list(zip(subareas, ordem_pref)), colWidths=[400, 80])
         subarea_table.setStyle(TableStyle([
+            ('FONTSIZE', (0,0), (-1,-1), 9),
             ('GRID', (0,0), (-1,-1), 0.5, colors.black),
             ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
             ('ALIGN', (1,1), (-1,-1), 'CENTER')
@@ -236,4 +237,4 @@ with aba3:
         merger.close()
 
         st.success("✅ PDF gerado com sucesso!")
-        st.download_button("⬇️ Baixar PDF Consolidado", buffer.getvalue(), file_name="formulario_ppgaig.pdf", mime="application/pdf")
+        st.download_button("⬇️ Baixar PDF Consolidado", final_output.getvalue(), file_name="formulario_ppgaig.pdf", mime="application/pdf")
