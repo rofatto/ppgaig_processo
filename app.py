@@ -3,7 +3,7 @@ import pandas as pd
 from io import BytesIO
 from PyPDF2 import PdfMerger
 from reportlab.lib.pagesizes import A4
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib import colors
 
@@ -72,7 +72,15 @@ with aba2:
     ]
 
     subareas = subareas_l1 if "Linha 1" in linha else subareas_l2
-    ordem_pref = [st.number_input(sub, 1, len(subareas), key=f"sub_{sub}") for sub in subareas]
+
+    ordem_pref = []
+    ordem_usada = set()
+    for sub in subareas:
+        ordem = st.number_input(sub, 1, len(subareas), key=f"sub_{sub}")
+        if ordem in ordem_usada:
+            st.warning(f"Ordem {ordem} já usada. Escolha uma ordem única para cada subárea.")
+        ordem_usada.add(ordem)
+        ordem_pref.append(ordem)
 
 # Pontuação do Currículo
 with aba3:
@@ -89,43 +97,55 @@ with aba3:
     df_curriculo = pd.DataFrame(data_curriculo, columns=["Item", "Pontuação por Item", "Pontuação Máxima"])
     df_curriculo["Quantidade"] = [st.number_input(i, 0, 10, key=f"curriculo_{i}") for i in df_curriculo["Item"]]
 
-# Gerar PDF Completo
+# Geração do PDF Único
 if st.button("📥 Gerar PDF Completo"):
-    merger = PdfMerger()
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=40)
+    styles = getSampleStyleSheet()
+    elements = []
 
-    buffer_inscricao = BytesIO()
-    doc_inscricao = SimpleDocTemplate(buffer_inscricao, pagesize=A4)
-    elements_inscricao = [Paragraph("Inscrição", getSampleStyleSheet()['Title'])]
-    elements_inscricao += [Paragraph(f"Nome: {nome}"), Paragraph(f"CPF: {cpf}"), Paragraph(f"Sexo: {sexo}"),
-                 Paragraph(f"Modalidade: {modalidade}"), Paragraph(f"Quota: {quota}")]
-    doc_inscricao.build(elements_inscricao)
-    merger.append(buffer_inscricao)
+    # Inscrição
+    elements.append(Paragraph("Inscrição", styles['Title']))
+    elements.append(Spacer(1, 6))
+    elements += [Paragraph(f"<b>Nome:</b> {nome}", styles['Normal']),
+                 Paragraph(f"<b>CPF:</b> {cpf}", styles['Normal']),
+                 Paragraph(f"<b>Sexo:</b> {sexo}", styles['Normal']),
+                 Paragraph(f"<b>Modalidade:</b> {modalidade}", styles['Normal']),
+                 Paragraph(f"<b>Quota:</b> {quota}", styles['Normal'])]
 
-    for pdf in [identidade_pdf, registro_civil_pdf, quitacao_pdf, reservista_pdf, quota_pdf]:
-        if pdf: merger.append(pdf)
+    elements.append(PageBreak())
+    elements.append(Paragraph("Seleção da Linha de Pesquisa", styles['Title']))
+    elements.append(Spacer(1, 6))
+    elements += [Paragraph(f"<b>Email:</b> {email}", styles['Normal']),
+                 Paragraph(f"<b>Data de Nascimento:</b> {data_nascimento.strftime('%d/%m/%Y')}", styles['Normal']),
+                 Paragraph(f"<b>Ano de Conclusão:</b> {ano_conclusao}", styles['Normal']),
+                 Paragraph(f"<b>Linha Selecionada:</b> {linha}", styles['Normal'])]
 
-    buffer_selecao = BytesIO()
-    doc_selecao = SimpleDocTemplate(buffer_selecao, pagesize=A4)
-    elements_selecao = [Paragraph("Seleção da Linha de Pesquisa", getSampleStyleSheet()['Title'])]
-    elements_selecao += [Paragraph(f"Email: {email}"), Paragraph(f"Data de Nascimento: {data_nascimento}"), Paragraph(f"Ano de Conclusão: {ano_conclusao}"), Paragraph(f"Linha: {linha}")]
     tabela_selecao = [["Subárea", "Ordem"]] + list(zip(subareas, ordem_pref))
-    elements_selecao.append(Table(tabela_selecao, style=[('GRID', (0,0), (-1,-1), 1, colors.black)]))
-    doc_selecao.build(elements_selecao)
-    merger.append(buffer_selecao)
+    table = Table(tabela_selecao, hAlign='LEFT', colWidths=[320, 60])
+    table.setStyle(TableStyle([
+        ('GRID', (0,0), (-1,-1), 0.5, colors.black),
+        ('BACKGROUND', (0,0), (-1,0), colors.grey),
+        ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
+    ]))
+    elements.append(table)
 
-    buffer_curriculo = BytesIO()
-    doc_curriculo = SimpleDocTemplate(buffer_curriculo, pagesize=A4)
-    elements_curriculo = [Paragraph("Pontuação do Currículo", getSampleStyleSheet()['Title'])]
-    tabela = [["Item", "Quantidade"]] + df_curriculo[["Item", "Quantidade"]].values.tolist()
-    elements_curriculo.append(Table(tabela, style=[('GRID', (0,0), (-1,-1), 1, colors.black)]))
-    doc_curriculo.build(elements_curriculo)
-    merger.append(buffer_curriculo)
+    elements.append(PageBreak())
+    elements.append(Paragraph("Pontuação do Currículo", styles['Title']))
+    elements.append(Spacer(1, 6))
 
-    if historico_pdf: merger.append(historico_pdf)
+    tabela_curriculo = [["Item", "Quantidade"]] + df_curriculo[["Item", "Quantidade"]].values.tolist()
+    table2 = Table(tabela_curriculo, hAlign='LEFT', colWidths=[350, 50])
+    table2.setStyle(TableStyle([
+        ('GRID', (0,0), (-1,-1), 0.5, colors.black),
+        ('BACKGROUND', (0,0), (-1,0), colors.grey),
+        ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
+    ]))
+    elements.append(table2)
+    elements.append(Spacer(1, 6))
+    elements.append(Paragraph(f"<b>Média do Histórico Escolar:</b> {historico_media:.2f}", styles['Normal']))
 
-    final_pdf = BytesIO()
-    merger.write(final_pdf)
-    merger.close()
+    doc.build(elements)
 
     st.success("✅ PDF completo gerado!")
-    st.download_button("⬇️ Baixar PDF", final_pdf.getvalue(), "inscricao_completa.pdf", "application/pdf")
+    st.download_button("⬇️ Baixar PDF", buffer.getvalue(), "inscricao_completa.pdf", "application/pdf")
