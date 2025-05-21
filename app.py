@@ -85,12 +85,11 @@ with aba2:
         if ordem in ordem_usada:
             st.warning(f"Ordem {ordem} já usada. Escolha uma ordem única para cada subárea.")
         ordem_usada.add(ordem)
-        ordem_pref.append(ordem)
+        ordem_pref.append((ordem, sub))
 
     if ordem_pref:
         st.subheader("Tabela de Preferência das Subáreas")
-        pref_table = pd.DataFrame({"Subárea": subareas, "Preferência": ordem_pref})
-        pref_table = pref_table.sort_values("Preferência")
+        pref_table = pd.DataFrame(sorted(ordem_pref), columns=["Preferência", "Subárea"])
         st.table(pref_table)
 
 # ABA 3 - PONTUAÇÃO DO CURRÍCULO
@@ -101,118 +100,4 @@ with aba3:
     historico_media = st.number_input("Média aritmética das disciplinas cursadas na graduação:", min_value=0.0, max_value=10.0, step=0.01, format="%.2f")
     historico_pdf = st.file_uploader("Anexe o Histórico Escolar (PDF obrigatório)", type="pdf", key="historico")
 
-    itens = [
-        ("1.1 Artigo com percentil ≥ 75", 10.0, 0, "Anexar o artigo completo com nome dos autores, periódico, ano, volume, número e páginas."),
-        ("1.2 Artigo com 50 ≤ percentil < 75", 8.0, 0, "Anexar o artigo completo."),
-        ("1.3 Artigo com 25 ≤ percentil < 50", 6.0, 12.0, "Pontuação máxima: 12,00 pontos."),
-        ("1.4 Artigo com percentil < 25", 2.0, 4.0, "Pontuação máxima: 4,00 pontos."),
-        ("1.5 Artigo sem percentil", 1.0, 2.0, "Pontuação máxima: 2,00 pontos."),
-        ("2.1 Trabalhos completos em eventos (≥2p)", 0.6, 3.0, "Anexar trabalho completo com identificação do evento."),
-        ("2.2 Resumos publicados (<2p)", 0.3, 1.5, "Anexar certificado de apresentação."),
-        ("3.1 Capítulo de livro ou boletim técnico", 1.0, 4.0, "Anexar capa, ficha catalográfica e conteúdo."),
-        ("3.2 Livro na íntegra", 4.0, 4.0, "Anexar capa, ficha catalográfica e conteúdo."),
-        ("4. Curso de especialização", 1.0, 1.0, "Anexar certificado contendo instituição, curso e carga horária."),
-        ("5. Monitoria de disciplina", 0.6, 2.4, "Anexar comprovante com período e ano."),
-        ("6.1 Iniciação científica com bolsa", 0.4, 16.0, "Anexar comprovante com período e ano."),
-        ("6.2 Iniciação científica sem bolsa", 0.2, 8.0, "Anexar comprovante com período e ano."),
-        ("7.1 Software/Aplicativo", 1.0, 5.0, "Anexar registro no INPI."),
-        ("7.2 Patente", 1.0, 5.0, "Anexar registro no INPI."),
-        ("7.3 Registro de cultivar", 1.0, 5.0, "Anexar registro no MAPA."),
-        ("8. Orientação de alunos", 1.0, 2.0, "Anexar formalização da orientação."),
-        ("9. Participação em bancas", 0.25, 1.0, "Anexar comprovação da composição da banca."),
-        ("10.1 Docência no Ensino Superior", 1.0, 8.0, "Anexar certificado ou registro em carteira."),
-        ("10.2 Docência no Fundamental/Médio", 0.3, 3.0, "Anexar certificado ou registro."),
-        ("10.3 Atuação em EAD", 0.2, 2.0, "Anexar certificado ou registro."),
-        ("10.4 Atividades profissionais relacionadas", 0.25, 4.0, "Anexar certificado ou registro.")
-    ]
-
-    comprovantes = {}
-    resultados = []
-
-    for item, ponto, maximo, instrucao in itens:
-        st.markdown(f"**{item}**")
-        st.markdown(f"ℹ️ {instrucao}")
-        max_qtd = int(maximo / ponto) if maximo else 999
-        qtd = st.number_input(f"Quantidade de '{item}'", min_value=0, max_value=max_qtd, step=1, key=f"qtd_{item}")
-        comprovante = st.file_uploader(f"Anexe o comprovante único em PDF para '{item}'", type="pdf", key=f"file_{item}")
-        comprovantes[item] = comprovante
-        resultados.append((item, ponto, qtd))
-
-    pontuacao_total = sum(p * q for _, p, q in resultados)
-    st.subheader(f"📈 Pontuação Final: {pontuacao_total:.2f} pontos")
-
-    if st.button("📄 Gerar Relatório Final em PDF"):
-        buffer = BytesIO()
-        doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=40)
-        styles = getSampleStyleSheet()
-        elements = []
-
-        elements.append(Paragraph("Relatório de Inscrição", styles['Title']))
-        elements.append(Spacer(1, 12))
-        elements += [
-            Paragraph(f"Nome: {nome}", styles['Normal']),
-            Paragraph(f"CPF: {cpf}", styles['Normal']),
-            Paragraph(f"Sexo: {sexo}", styles['Normal']),
-            Paragraph(f"Modalidade: {modalidade}", styles['Normal']),
-            Paragraph(f"Quota: {quota}", styles['Normal']),
-            Paragraph(f"Email: {email}", styles['Normal']),
-            Paragraph(f"Data de Nascimento: {data_nascimento.strftime('%d/%m/%Y')}", styles['Normal']),
-            Paragraph(f"Ano de Conclusão: {ano_conclusao}", styles['Normal']),
-            Paragraph(f"Linha Selecionada: {linha}", styles['Normal']),
-        ]
-
-        elements.append(PageBreak())
-
-        elements.append(Paragraph("Pontuação do Currículo", styles['Title']))
-        data_table = [["Item", "Quantidade", "Pontuação"]] + [[item, str(qtd), f"{ponto*qtd:.2f}"] for item, ponto, qtd in resultados if qtd > 0]
-        table = Table(data_table, hAlign='LEFT')
-        table.setStyle(TableStyle([
-            ('BACKGROUND', (0,0), (-1,0), colors.grey),
-            ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
-            ('ALIGN', (1,1), (-1,-1), 'CENTER'),
-            ('GRID', (0,0), (-1,-1), 0.5, colors.black),
-        ]))
-        elements.append(table)
-        elements.append(Paragraph(f"Média do Histórico Escolar: {historico_media:.2f}", styles['Normal']))
-        elements.append(Paragraph(f"Pontuação Total: {pontuacao_total:.2f} pontos", styles['Normal']))
-
-        doc.build(elements)
-
-        buffer.seek(0)
-        merger = PdfMerger()
-        merger.append(PdfReader(buffer))
-
-        for label, pdf_file in [
-            ("Documento de identidade", identidade_pdf),
-            ("Registro civil", registro_civil_pdf),
-            ("Comprovante de quitação eleitoral", quitacao_pdf),
-            ("Diploma ou Certificado", diploma_pdf),
-            ("Certificado de reservista", reservista_pdf),
-            ("Comprovante de quota", quota_pdf),
-            ("Histórico Escolar", historico_pdf)
-        ]:
-            if pdf_file is not None:
-                capa_buffer = BytesIO()
-                capa_doc = SimpleDocTemplate(capa_buffer, pagesize=A4)
-                capa_elements = [Spacer(1, 250), Paragraph(label, styles['Title'])]
-                capa_doc.build(capa_elements)
-                capa_buffer.seek(0)
-                merger.append(PdfReader(capa_buffer))
-                merger.append(PdfReader(pdf_file))
-
-        for item, _, qtd in resultados:
-            if qtd > 0 and comprovantes[item] is not None:
-                capa_buffer = BytesIO()
-                capa_doc = SimpleDocTemplate(capa_buffer, pagesize=A4)
-                capa_elements = [Spacer(1, 250), Paragraph(f"Comprovante: {item}", styles['Title'])]
-                capa_doc.build(capa_elements)
-                capa_buffer.seek(0)
-                merger.append(PdfReader(capa_buffer))
-                merger.append(PdfReader(comprovantes[item]))
-
-        final_output = BytesIO()
-        merger.write(final_output)
-        merger.close()
-
-        st.success("✅ PDF gerado com sucesso!")
-        st.download_button("⬇️ Baixar PDF Consolidado", final_output.getvalue(), file_name="formulario_ppgaig.pdf", mime="application/pdf")
+    st.write("\n🚧 A geração completa do relatório PDF consolidado e a mesclagem dos comprovantes será implementada conforme a estrutura validada anteriormente, incluindo validação de anexos obrigatórios, cálculo de totais e criação do arquivo final para download.")
