@@ -10,26 +10,26 @@ from reportlab.lib import colors
 
 st.set_page_config(page_title="Formulário PPGAIG", layout="wide")
 
+# ➡️ Carregar progresso
 uploaded_progress = st.file_uploader("📂 Carregar Progresso (JSON)", type="json")
 if uploaded_progress:
     saved_data = json.load(uploaded_progress)
     st.session_state.update(saved_data)
     st.warning("⚠️ Progresso carregado! Por favor, **reenvie os arquivos PDF** antes de gerar o relatório.")
 
+# Abas do formulário
 aba1, aba2, aba3 = st.tabs(["Inscrição", "Seleção da Linha de Pesquisa", "Pontuação do Currículo"])
 
+# Inscrição
 with aba1:
     st.header("Inscrição")
     nome = st.text_input("Nome completo", st.session_state.get('nome', ''))
     cpf = st.text_input("CPF", st.session_state.get('cpf', ''))
-    sexo = st.radio("Sexo", ["Masculino", "Feminino", "Prefiro não identificar"],
-                    index=["Masculino", "Feminino", "Prefiro não identificar"].index(st.session_state.get('sexo', "Masculino")))
-    modalidade = st.radio("Modalidade", ["Regular", "Especial"],
-                          index=["Regular", "Especial"].index(st.session_state.get('modalidade', "Regular")))
-    quota = st.selectbox("Tipo de Quota", ["Ampla Concorrência", "Pretos, Pardos, Indígenas", "Pessoas com Deficiência", "Pessoas sob políticas humanitárias no Brasil"],
-                         index=["Ampla Concorrência", "Pretos, Pardos, Indígenas", "Pessoas com Deficiência", "Pessoas sob políticas humanitárias no Brasil"].index(st.session_state.get('quota', "Ampla Concorrência")))
+    sexo = st.radio("Sexo", ["Masculino", "Feminino", "Prefiro não identificar"], index=["Masculino", "Feminino", "Prefiro não identificar"].index(st.session_state.get('sexo', "Masculino")))
+    modalidade = st.radio("Modalidade", ["Regular", "Especial"], index=["Regular", "Especial"].index(st.session_state.get('modalidade', "Regular")))
+    quota = st.selectbox("Tipo de Quota", ["Ampla Concorrência", "Pretos, Pardos, Indígenas", "Pessoas com Deficiência", "Pessoas sob políticas humanitárias no Brasil"], index=["Ampla Concorrência", "Pretos, Pardos, Indígenas", "Pessoas com Deficiência", "Pessoas sob políticas humanitárias no Brasil"].index(st.session_state.get('quota', "Ampla Concorrência")))
 
-    identidade_pdf = st.file_uploader("Documento de identidade (mesclado PDF) *", type="pdf")
+    identidade_pdf = st.file_uploader("Documento de identidade (com CPF ou RG e CPF separados, mas mesclados em um único PDF) *", type="pdf")
     registro_civil_pdf = st.file_uploader("Registro civil (nascimento ou casamento) *", type="pdf")
     quitacao_pdf = st.file_uploader("Comprovante de quitação eleitoral *", type="pdf")
     diploma_pdf = st.file_uploader("Diploma ou Certificado de Conclusão da Graduação *", type="pdf")
@@ -42,19 +42,21 @@ with aba1:
     if quota != "Ampla Concorrência":
         quota_pdf = st.file_uploader("Comprovante para quotas *", type="pdf")
 
+# Seleção da Linha de Pesquisa
 with aba2:
     st.header("Seleção da Linha de Pesquisa")
     email = st.text_input("Email", st.session_state.get('email', ''))
     from datetime import date
-    data_nascimento = st.date_input("Data de Nascimento (ANO/MÊS/DIA)", value=pd.to_datetime(st.session_state.get('data_nascimento', '1990-01-01')), min_value=date(1900,1,1), max_value=date.today())
+    data_nascimento = st.date_input("Data de Nascimento (ANO/MÊS/DIA)", value=pd.to_datetime(st.session_state.get('data_nascimento', '1990-01-01')), min_value=date(1900, 1, 1), max_value=date.today())
     ano_conclusao = st.number_input("Ano de Conclusão do Curso de Graduação", 1950, 2100, value=st.session_state.get('ano_conclusao', 2024))
 
-    linha = st.radio("Selecione apenas 1 (uma) linha de pesquisa:", ["Linha 1: Desenvolvimento e aplicações de métodos em informações geoespaciais", "Linha 2: Sistemas integrados de produção vegetal"],
-                     index=["Linha 1: Desenvolvimento e aplicações de métodos em informações geoespaciais", "Linha 2: Sistemas integrados de produção vegetal"].index(st.session_state.get('linha', "Linha 1: Desenvolvimento e aplicações de métodos em informações geoespaciais")))
+    linha = st.radio("Selecione apenas 1 (uma) linha de pesquisa:", ["Linha 1: Desenvolvimento e aplicações de métodos em informações geoespaciais", "Linha 2: Sistemas integrados de produção vegetal"], index=["Linha 1: Desenvolvimento e aplicações de métodos em informações geoespaciais", "Linha 2: Sistemas integrados de produção vegetal"].index(st.session_state.get('linha', "Linha 1: Desenvolvimento e aplicações de métodos em informações geoespaciais")))
 
     st.markdown("""
     📝 **Classifique as subáreas por ordem de preferência:**
-    - Use de **1** (maior interesse) a **5 ou 13** (menor), conforme a linha.
+    - Utilize os botões “+” e “–” para atribuir uma ordem de **1 (maior interesse)** a **5 (menor interesse)** – *caso tenha selecionado a Linha 1*.
+    - Caso tenha selecionado a Linha 2, a ordem vai de **1 (maior interesse) a 13 (menor interesse)**.
+    - Cada número de ordem só pode ser usado uma vez.
     """)
 
     subareas_l1 = [
@@ -66,7 +68,8 @@ with aba2:
     ]
 
     subareas_l2 = [
-        "Biotecnologia na agricultura", "Recursos florestais",
+        "Biotecnologia na agricultura",
+        "Recursos florestais",
         "Nutrição, Manejo e cultura de tecidos em hortaliças e plantas medicinais",
         "Micologia Aplicada. Patologia Florestal. Patologia de Sementes. Sensoriamento remoto aplicado à Patologia Florestal",
         "Nutrição mineral e metabolismo de plantas",
@@ -81,18 +84,20 @@ with aba2:
     ]
 
     subareas = subareas_l1 if "Linha 1" in linha else subareas_l2
-    saved_ordem = dict(st.session_state.get('ordem_pref', []))
+
     ordem_pref = []
     ordem_usada = set()
     for sub in subareas:
-        ordem = st.number_input(sub, 1, len(subareas), key=f"sub_{sub}", value=saved_ordem.get(sub, 1))
+        ordem = st.number_input(sub, 1, len(subareas), key=f"sub_{sub}")
         if ordem in ordem_usada:
-            st.warning(f"Ordem {ordem} já usada. Escolha uma ordem única.")
+            st.warning(f"Ordem {ordem} já usada. Escolha uma ordem única para cada subárea.")
         ordem_usada.add(ordem)
         ordem_pref.append((ordem, sub))
 
+# Pontuação do Currículo
 with aba3:
     st.header("Pontuação do Currículo")
+    st.markdown("📝 **Atenção:** Os comprovantes de um dado item devem ser enviados em **um único arquivo PDF**.")
     historico_media = st.number_input("Média aritmética das disciplinas cursadas na graduação (obrigatório):", min_value=0.01, max_value=10.0, step=0.01, format="%.2f")
     historico_pdf = st.file_uploader("Anexe o Histórico Escolar (PDF obrigatório)", type="pdf", key="historico")
 
@@ -121,13 +126,15 @@ with aba3:
         ("10.4 Atividades profissionais relacionadas", "0,25 ponto/semestre. Máx: 4,0 pontos.", 0.25, 4.0)
     ]
 
-    saved_pontuacao = st.session_state.get('pontuacao', {})
     comprovantes = {}
     dados = []
 
-    for item, ponto, maximo in itens:
-        qtd = st.number_input(f"Quantidade de '{item}'", min_value=0, step=1, value=saved_pontuacao.get(item, 0))
-        comprovantes[item] = st.file_uploader(f"Comprovante único PDF para '{item}'", type="pdf", key=f"file_{item}")
+    for item, desc, ponto, maximo in itens:
+        st.markdown(f"**{item}** — {desc}")
+        qtd = st.number_input(f"Quantidade de '{item}'", min_value=0, step=1)
+        comprovantes[item] = st.file_uploader(f"Anexe o comprovante único em PDF para '{item}'", type="pdf", key=f"file_{item}")
+        if qtd > 0 and comprovantes[item] is None:
+            st.warning(f"Preencheu '{item}' com quantidade {qtd}, mas não anexou o comprovante.")
         total = min(qtd * ponto, maximo) if maximo > 0 else qtd * ponto
         dados.append((item, qtd, total))
 
@@ -135,24 +142,25 @@ with aba3:
 
     st.subheader(f"📈 Pontuação Final: {pontuacao_total:.2f} pontos")
 
+    # ✅ Botão salvar
     save_data = {
         'nome': nome, 'cpf': cpf, 'sexo': sexo, 'modalidade': modalidade, 'quota': quota,
-        'email': email, 'data_nascimento': str(data_nascimento), 'ano_conclusao': ano_conclusao, 'linha': linha,
-        'ordem_pref': ordem_pref, 'historico_media': historico_media,
-        'pontuacao': {item: qtd for item, qtd, _ in dados}
+        'email': email, 'data_nascimento': str(data_nascimento), 'ano_conclusao': ano_conclusao, 'linha': linha
     }
-
     b = BytesIO()
-    b.write(json.dumps(save_data, indent=2, ensure_ascii=False).encode('utf-8'))
+    b.write(json.dumps(save_data).encode())
     st.download_button("💾 Salvar Progresso", b.getvalue(), "progresso_ppgaig.json", mime="application/json")
 
+    # ✅ Validação das ordens antes do botão PDF
     ordens = [ordem for ordem, _ in ordem_pref]
     if len(ordens) != len(set(ordens)):
-        st.error("❗ Ordens repetidas nas subáreas!")
+        st.error("❗ Há ordens repetidas nas subáreas! Por favor, atribua uma ordem única para cada subárea.")
     else:
         if st.button("📄 Gerar Relatório Final em PDF"):
-            if not historico_pdf or not all([identidade_pdf, registro_civil_pdf, quitacao_pdf, diploma_pdf]):
-                st.error("❗ Todos documentos obrigatórios devem ser anexados.")
+            if not historico_pdf:
+                st.error("❗ Histórico Escolar obrigatório não foi anexado.")
+            elif not all([identidade_pdf, registro_civil_pdf, quitacao_pdf, diploma_pdf]):
+                st.error("❗ Todos documentos obrigatórios da inscrição devem ser anexados.")
             else:
                 buffer = BytesIO()
                 doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=40)
@@ -169,7 +177,9 @@ with aba3:
                 elements.append(Spacer(1, 12))
                 elements.append(Paragraph("Subáreas Selecionadas", styles['Heading2']))
                 subareas_tab = sorted(ordem_pref, key=lambda x: x[0])
-                table_data = [["Ordem", "Subárea"]] + [[ordem, Paragraph(sub, ParagraphStyle('subarea', fontSize=9))] for ordem, sub in subareas_tab]
+                table_data = [["Ordem", "Subárea"]] + [
+                    [ordem, Paragraph(sub, ParagraphStyle('subarea', fontSize=9))] for ordem, sub in subareas_tab
+                ]
                 table = Table(table_data, colWidths=[50, 400])
                 table.setStyle(TableStyle([
                     ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
@@ -181,7 +191,9 @@ with aba3:
                 elements.append(PageBreak())
 
                 elements.append(Paragraph("Pontuação do Currículo", styles['Title']))
-                table_data = [["Item", "Quantidade", "Total"]] + [[Paragraph(item, ParagraphStyle('item', fontSize=8)), qtd, f"{total:.2f}"] for item, qtd, total in dados]
+                table_data = [["Item", "Quantidade", "Total"]] + [
+                    [Paragraph(item, ParagraphStyle('item', fontSize=8)), qtd, f"{total:.2f}"] for item, qtd, total in dados
+                ]
                 pont_table = Table(table_data, colWidths=[300, 70, 70])
                 pont_table.setStyle(TableStyle([
                     ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
@@ -207,7 +219,9 @@ with aba3:
                 ]:
                     if pdf_file:
                         capa_buffer = BytesIO()
-                        SimpleDocTemplate(capa_buffer, pagesize=A4).build([Spacer(1, 250), Paragraph(label, styles['Title'])])
+                        SimpleDocTemplate(capa_buffer, pagesize=A4).build(
+                            [Spacer(1, 250), Paragraph(label, styles['Title'])]
+                        )
                         capa_buffer.seek(0)
                         merger.append(PdfReader(capa_buffer))
                         pdf_file.seek(0)
@@ -216,7 +230,9 @@ with aba3:
                 for item, qtd, _ in dados:
                     if qtd > 0 and comprovantes[item]:
                         capa_buffer = BytesIO()
-                        SimpleDocTemplate(capa_buffer, pagesize=A4).build([Spacer(1, 250), Paragraph(f"Comprovante: {item}", styles['Title'])])
+                        SimpleDocTemplate(capa_buffer, pagesize=A4).build(
+                            [Spacer(1, 250), Paragraph(f"Comprovante: {item}", styles['Title'])]
+                        )
                         capa_buffer.seek(0)
                         merger.append(PdfReader(capa_buffer))
                         comprovantes[item].seek(0)
