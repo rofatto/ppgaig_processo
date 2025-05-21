@@ -102,14 +102,7 @@ with aba2:
 with aba3:
     st.header("Pontuação do Currículo")
     st.markdown("📝 **Atenção:** Os comprovantes de um dado item devem ser enviados em **um único arquivo PDF**.")
-   historico_media = st.number_input(
-    "Média aritmética das disciplinas cursadas na graduação (obrigatório):",
-    min_value=0.01,
-    max_value=10.0,
-    step=0.01,
-    format="%.2f",
-    value=st.session_state.get('historico_media', 1.00)  # ou outro valor padrão
-)
+    historico_media = st.number_input("Média aritmética das disciplinas cursadas na graduação (obrigatório):", min_value=0.01, max_value=10.0, step=0.01, format="%.2f", value=st.session_state.get('historico_media', 1.00))  # ou outro valor padrão
     historico_pdf = st.file_uploader("Anexe o Histórico Escolar (PDF obrigatório)", type="pdf", key="historico")
 
     itens = [
