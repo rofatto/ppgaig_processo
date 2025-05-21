@@ -85,10 +85,11 @@ with aba2:
 
     subareas = subareas_l1 if "Linha 1" in linha else subareas_l2
 
+    saved_ordem = dict(st.session_state.get('ordem_pref', []))
     ordem_pref = []
     ordem_usada = set()
     for sub in subareas:
-        ordem = st.number_input(sub, 1, len(subareas), key=f"sub_{sub}")
+        ordem = st.number_input(sub, 1, len(subareas), key=f"sub_{sub}", value=saved_ordem.get(sub, 1))
         if ordem in ordem_usada:
             st.warning(f"Ordem {ordem} já usada. Escolha uma ordem única para cada subárea.")
         ordem_usada.add(ordem)
@@ -126,12 +127,13 @@ with aba3:
         ("10.4 Atividades profissionais relacionadas", "0,25 ponto/semestre. Máx: 4,0 pontos.", 0.25, 4.0)
     ]
 
+    saved_pontuacao = st.session_state.get('pontuacao', {})
     comprovantes = {}
     dados = []
 
     for item, desc, ponto, maximo in itens:
         st.markdown(f"**{item}** — {desc}")
-        qtd = st.number_input(f"Quantidade de '{item}'", min_value=0, step=1)
+        qtd = st.number_input(f"Quantidade de '{item}'", min_value=0, step=1, value=saved_pontuacao.get(item, 0))
         comprovantes[item] = st.file_uploader(f"Anexe o comprovante único em PDF para '{item}'", type="pdf", key=f"file_{item}")
         if qtd > 0 and comprovantes[item] is None:
             st.warning(f"Preencheu '{item}' com quantidade {qtd}, mas não anexou o comprovante.")
@@ -142,13 +144,24 @@ with aba3:
 
     st.subheader(f"📈 Pontuação Final: {pontuacao_total:.2f} pontos")
 
-    # ✅ Botão salvar
+    # ✅ Botão salvar progresso COMPLETO
     save_data = {
-        'nome': nome, 'cpf': cpf, 'sexo': sexo, 'modalidade': modalidade, 'quota': quota,
-        'email': email, 'data_nascimento': str(data_nascimento), 'ano_conclusao': ano_conclusao, 'linha': linha
+        'nome': nome,
+        'cpf': cpf,
+        'sexo': sexo,
+        'modalidade': modalidade,
+        'quota': quota,
+        'email': email,
+        'data_nascimento': str(data_nascimento),
+        'ano_conclusao': ano_conclusao,
+        'linha': linha,
+        'ordem_pref': ordem_pref,
+        'historico_media': historico_media,
+        'pontuacao': {item: qtd for item, qtd, _ in dados}
     }
+
     b = BytesIO()
-    b.write(json.dumps(save_data).encode())
+    b.write(json.dumps(save_data, indent=2, ensure_ascii=False).encode('utf-8'))
     st.download_button("💾 Salvar Progresso", b.getvalue(), "progresso_ppgaig.json", mime="application/json")
 
     # ✅ Validação das ordens antes do botão PDF
@@ -177,9 +190,7 @@ with aba3:
                 elements.append(Spacer(1, 12))
                 elements.append(Paragraph("Subáreas Selecionadas", styles['Heading2']))
                 subareas_tab = sorted(ordem_pref, key=lambda x: x[0])
-                table_data = [["Ordem", "Subárea"]] + [
-                    [ordem, Paragraph(sub, ParagraphStyle('subarea', fontSize=9))] for ordem, sub in subareas_tab
-                ]
+                table_data = [["Ordem", "Subárea"]] + [[ordem, Paragraph(sub, ParagraphStyle('subarea', fontSize=9))] for ordem, sub in subareas_tab]
                 table = Table(table_data, colWidths=[50, 400])
                 table.setStyle(TableStyle([
                     ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
