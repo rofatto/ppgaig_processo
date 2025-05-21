@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import json
 from io import BytesIO
 from PyPDF2 import PdfMerger, PdfReader
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak, Table, TableStyle
@@ -9,17 +10,24 @@ from reportlab.lib import colors
 
 st.set_page_config(page_title="Formulário PPGAIG", layout="wide")
 
+# ➡️ Carregar progresso
+uploaded_progress = st.file_uploader("📂 Carregar Progresso (JSON)", type="json")
+if uploaded_progress:
+    saved_data = json.load(uploaded_progress)
+    st.session_state.update(saved_data)
+    st.warning("⚠️ Progresso carregado! Por favor, **reenvie os arquivos PDF** antes de gerar o relatório.")
+
 # Abas do formulário
 aba1, aba2, aba3 = st.tabs(["Inscrição", "Seleção da Linha de Pesquisa", "Pontuação do Currículo"])
 
 # Inscrição
 with aba1:
     st.header("Inscrição")
-    nome = st.text_input("Nome completo")
-    cpf = st.text_input("CPF")
-    sexo = st.radio("Sexo", ["Masculino", "Feminino", "Prefiro não identificar"])
-    modalidade = st.radio("Modalidade", ["Regular", "Especial"])
-    quota = st.selectbox("Tipo de Quota", ["Ampla Concorrência", "Pretos, Pardos, Indígenas", "Pessoas com Deficiência", "Pessoas sob políticas humanitárias no Brasil"])
+    nome = st.text_input("Nome completo", st.session_state.get('nome', ''))
+    cpf = st.text_input("CPF", st.session_state.get('cpf', ''))
+    sexo = st.radio("Sexo", ["Masculino", "Feminino", "Prefiro não identificar"], index=["Masculino", "Feminino", "Prefiro não identificar"].index(st.session_state.get('sexo', "Masculino")))
+    modalidade = st.radio("Modalidade", ["Regular", "Especial"], index=["Regular", "Especial"].index(st.session_state.get('modalidade', "Regular")))
+    quota = st.selectbox("Tipo de Quota", ["Ampla Concorrência", "Pretos, Pardos, Indígenas", "Pessoas com Deficiência", "Pessoas sob políticas humanitárias no Brasil"], index=["Ampla Concorrência", "Pretos, Pardos, Indígenas", "Pessoas com Deficiência", "Pessoas sob políticas humanitárias no Brasil"].index(st.session_state.get('quota', "Ampla Concorrência")))
 
     identidade_pdf = st.file_uploader("Documento de identidade (com CPF ou RG e CPF separados, mas mesclados em um único PDF) *", type="pdf")
     registro_civil_pdf = st.file_uploader("Registro civil (nascimento ou casamento) *", type="pdf")
@@ -37,12 +45,12 @@ with aba1:
 # Seleção da Linha de Pesquisa
 with aba2:
     st.header("Seleção da Linha de Pesquisa")
-    email = st.text_input("Email")
+    email = st.text_input("Email", st.session_state.get('email', ''))
     from datetime import date
-    data_nascimento = st.date_input("Data de Nascimento (ANO/MÊS/DIA)", value=date(1990, 1, 1), min_value=date(1900, 1, 1), max_value=date.today())
-    ano_conclusao = st.number_input("Ano de Conclusão do Curso de Graduação", 1950, 2100)
+    data_nascimento = st.date_input("Data de Nascimento (ANO/MÊS/DIA)", value=pd.to_datetime(st.session_state.get('data_nascimento', '1990-01-01')), min_value=date(1900, 1, 1), max_value=date.today())
+    ano_conclusao = st.number_input("Ano de Conclusão do Curso de Graduação", 1950, 2100, value=st.session_state.get('ano_conclusao', 2024))
 
-    linha = st.radio("Selecione apenas 1 (uma) linha de pesquisa:", ["Linha 1: Desenvolvimento e aplicações de métodos em informações geoespaciais", "Linha 2: Sistemas integrados de produção vegetal"])
+    linha = st.radio("Selecione apenas 1 (uma) linha de pesquisa:", ["Linha 1: Desenvolvimento e aplicações de métodos em informações geoespaciais", "Linha 2: Sistemas integrados de produção vegetal"], index=["Linha 1: Desenvolvimento e aplicações de métodos em informações geoespaciais", "Linha 2: Sistemas integrados de produção vegetal"].index(st.session_state.get('linha', "Linha 1: Desenvolvimento e aplicações de métodos em informações geoespaciais")))
 
     st.markdown("""
     📝 **Classifique as subáreas por ordem de preferência:**
@@ -133,6 +141,15 @@ with aba3:
     pontuacao_total = sum(total for _, _, total in dados)
 
     st.subheader(f"📈 Pontuação Final: {pontuacao_total:.2f} pontos")
+
+    # ✅ Botão salvar
+    save_data = {
+        'nome': nome, 'cpf': cpf, 'sexo': sexo, 'modalidade': modalidade, 'quota': quota,
+        'email': email, 'data_nascimento': str(data_nascimento), 'ano_conclusao': ano_conclusao, 'linha': linha
+    }
+    b = BytesIO()
+    b.write(json.dumps(save_data).encode())
+    st.download_button("💾 Salvar Progresso", b.getvalue(), "progresso_ppgaig.json", mime="application/json")
 
     # ✅ Validação das ordens antes do botão PDF
     ordens = [ordem for ordem, _ in ordem_pref]
