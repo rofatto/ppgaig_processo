@@ -85,10 +85,14 @@ with aba2:
 
     subareas = subareas_l1 if "Linha 1" in linha else subareas_l2
 
+    # ➡️ Carregar ordem das subáreas
+    saved_ordem_list = st.session_state.get('ordem_pref', [])
+    saved_ordem = {sub: ordem for ordem, sub in saved_ordem_list}
+    
     ordem_pref = []
     ordem_usada = set()
     for sub in subareas:
-        ordem = st.number_input(sub, 1, len(subareas), key=f"sub_{sub}")
+        ordem = st.number_input(sub, 1, len(subareas), key=f"sub_{sub}", value=saved_ordem.get(sub, 1))
         if ordem in ordem_usada:
             st.warning(f"Ordem {ordem} já usada. Escolha uma ordem única para cada subárea.")
         ordem_usada.add(ordem)
@@ -126,12 +130,14 @@ with aba3:
         ("10.4 Atividades profissionais relacionadas", "0,25 ponto/semestre. Máx: 4,0 pontos.", 0.25, 4.0)
     ]
 
+    saved_pontuacao = st.session_state.get('pontuacao', {})
+    
     comprovantes = {}
     dados = []
 
     for item, desc, ponto, maximo in itens:
         st.markdown(f"**{item}** — {desc}")
-        qtd = st.number_input(f"Quantidade de '{item}'", min_value=0, step=1)
+        qtd = st.number_input(f"Quantidade de '{item}'", min_value=0, step=1, value=saved_pontuacao.get(item, 0))
         comprovantes[item] = st.file_uploader(f"Anexe o comprovante único em PDF para '{item}'", type="pdf", key=f"file_{item}")
         if qtd > 0 and comprovantes[item] is None:
             st.warning(f"Preencheu '{item}' com quantidade {qtd}, mas não anexou o comprovante.")
