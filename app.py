@@ -2,9 +2,10 @@ import streamlit as st
 import pandas as pd
 from io import BytesIO
 from PyPDF2 import PdfMerger, PdfReader
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak, Table, TableStyle
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib import colors
 
 st.set_page_config(page_title="Formulário PPGAIG", layout="wide")
 
@@ -38,7 +39,6 @@ with aba2:
     st.header("Seleção da Linha de Pesquisa")
     email = st.text_input("Email")
     from datetime import date
-
     data_nascimento = st.date_input("Data de Nascimento (ANO/MÊS/DIA)", value=date(1990, 1, 1), min_value=date(1900, 1, 1), max_value=date.today())
     ano_conclusao = st.number_input("Ano de Conclusão do Curso de Graduação", 1950, 2100)
 
@@ -76,7 +76,6 @@ with aba2:
     ]
 
     subareas = subareas_l1 if "Linha 1" in linha else subareas_l2
-
     ordem_pref = []
     ordem_usada = set()
     for sub in subareas:
@@ -84,39 +83,38 @@ with aba2:
         if ordem in ordem_usada:
             st.warning(f"Ordem {ordem} já usada. Escolha uma ordem única para cada subárea.")
         ordem_usada.add(ordem)
-        ordem_pref.append(ordem)
+        ordem_pref.append((ordem, sub))
 
 # Pontuação do Currículo
 with aba3:
     st.header("Pontuação do Currículo")
-
     st.markdown("📝 **Atenção:** Os comprovantes de um dado item devem ser enviados em **um único arquivo PDF**.")
     historico_media = st.number_input("Média aritmética das disciplinas cursadas na graduação:", min_value=0.0, max_value=10.0, step=0.01, format="%.2f")
     historico_pdf = st.file_uploader("Anexe o Histórico Escolar (PDF obrigatório)", type="pdf", key="historico")
 
     itens = [
-        ("1.1 Artigo com percentil ≥ 75", "Informar a quantidade de artigos. Pontuação: 10,00 pontos/artigo. Anexar o artigo completo com nome dos autores, periódico, ano, volume, número e páginas. Artigos em prelo ou first view não são aceitos.", 10.0, 0),
+        ("1.1 Artigo com percentil ≥ 75", "Informar a quantidade de artigos. Pontuação: 10,00 pontos/artigo.", 10.0, 0),
         ("1.2 Artigo com 50 ≤ percentil < 75", "Informar a quantidade de artigos. Pontuação: 8,00 pontos/artigo.", 8.0, 0),
         ("1.3 Artigo com 25 ≤ percentil < 50", "Informar a quantidade de artigos. Pontuação: 6,00 pontos/artigo. Pontuação máxima: 12,00 pontos.", 6.0, 12.0),
         ("1.4 Artigo com percentil < 25", "Informar a quantidade de artigos. Pontuação: 2,00 pontos/artigo. Pontuação máxima: 4,00 pontos.", 2.0, 4.0),
         ("1.5 Artigo sem percentil", "Informar a quantidade de artigos. Pontuação: 1,00 ponto/artigo. Pontuação máxima: 2,00 pontos.", 1.0, 2.0),
-        ("2.1 Trabalhos completos em eventos (≥2p)", "Informar a quantidade. Pontuação: 0,6 ponto/unidade. Anexar trabalho, nome do evento, ano, título, autores e numeração das páginas.", 0.6, 3.0),
-        ("2.2 Resumos publicados (<2p)", "Informar a quantidade. Pontuação: 0,3 ponto/unidade. Anexar certificado de apresentação.", 0.3, 1.5),
-        ("3.1 Capítulo de livro ou boletim técnico", "Informar a quantidade. Pontuação: 1,0 ponto/unidade. Anexar capa, ficha catalográfica, autores, ano e páginas.", 1.0, 4.0),
-        ("3.2 Livro na íntegra", "Informar a quantidade. Pontuação: 4,0 pontos/unidade. Anexar os mesmos elementos do item anterior.", 4.0, 4.0),
-        ("4. Curso de especialização", "Informar a quantidade. Pontuação: 1,0 ponto/unidade. Curso com no mínimo 320h nas áreas de Ciências Agrárias ou Geociências. Anexar certificado contendo instituição, nome do curso, carga horária e ano de conclusão.", 1.0, 1.0),
-        ("5. Monitoria de disciplina", "Informar a quantidade. Pontuação: 0,6 ponto por semestre letivo (mínimo 2 meses). Anexar comprovante com período e ano, emitido pela Pró-reitoria ou órgão equivalente.", 0.6, 2.4),
-        ("6.1 Iniciação científica com bolsa", "Informar a quantidade de meses. Pontuação: 0,4 ponto/mês. Anexar comprovante com período e ano, emitido por Pró-reitoria ou agência de fomento.", 0.4, 16.0),
-        ("6.2 Iniciação científica sem bolsa", "Informar a quantidade de meses. Pontuação: 0,2 ponto/mês. Mesma orientação de comprovação do item anterior.", 0.2, 8.0),
-        ("7.1 Software/Aplicativo", "Informar a quantidade. Pontuação: 1,0 ponto/unidade. Anexar registro no INPI.", 1.0, 5.0),
-        ("7.2 Patente", "Informar a quantidade. Pontuação: 1,0 ponto/unidade. Anexar registro no INPI.", 1.0, 5.0),
-        ("7.3 Registro de cultivar", "Informar a quantidade. Pontuação: 1,0 ponto/unidade. Anexar registro no MAPA.", 1.0, 5.0),
-        ("8. Orientação de alunos", "Informar a quantidade. Pontuação: 1,0 ponto por orientação concluída. Anexar formalização da orientação ou carta do coordenador de curso.", 1.0, 2.0),
-        ("9. Participação em bancas", "Informar a quantidade. Pontuação: 0,25 ponto/unidade. Anexar comprovação da composição da banca, título do trabalho e ano da defesa.", 0.25, 1.0),
-        ("10.1 Docência no Ensino Superior", "Informar a quantidade de semestres. Pontuação: 1,0 ponto/semestre. Anexar certificado ou registro em carteira de trabalho.", 1.0, 8.0),
+        ("2.1 Trabalhos completos em eventos (≥2p)", "Informar a quantidade. Pontuação: 0,6 ponto/unidade.", 0.6, 3.0),
+        ("2.2 Resumos publicados (<2p)", "Informar a quantidade. Pontuação: 0,3 ponto/unidade.", 0.3, 1.5),
+        ("3.1 Capítulo de livro ou boletim técnico", "Informar a quantidade. Pontuação: 1,0 ponto/unidade.", 1.0, 4.0),
+        ("3.2 Livro na íntegra", "Informar a quantidade. Pontuação: 4,0 pontos/unidade.", 4.0, 4.0),
+        ("4. Curso de especialização", "Informar a quantidade. Pontuação: 1,0 ponto/unidade.", 1.0, 1.0),
+        ("5. Monitoria de disciplina", "Informar a quantidade. Pontuação: 0,6 ponto por semestre.", 0.6, 2.4),
+        ("6.1 Iniciação científica com bolsa", "Informar a quantidade de meses. Pontuação: 0,4 ponto/mês.", 0.4, 16.0),
+        ("6.2 Iniciação científica sem bolsa", "Informar a quantidade de meses. Pontuação: 0,2 ponto/mês.", 0.2, 8.0),
+        ("7.1 Software/Aplicativo", "Informar a quantidade. Pontuação: 1,0 ponto/unidade.", 1.0, 5.0),
+        ("7.2 Patente", "Informar a quantidade. Pontuação: 1,0 ponto/unidade.", 1.0, 5.0),
+        ("7.3 Registro de cultivar", "Informar a quantidade. Pontuação: 1,0 ponto/unidade.", 1.0, 5.0),
+        ("8. Orientação de alunos", "Informar a quantidade. Pontuação: 1,0 ponto por orientação concluída.", 1.0, 2.0),
+        ("9. Participação em bancas", "Informar a quantidade. Pontuação: 0,25 ponto/unidade.", 0.25, 1.0),
+        ("10.1 Docência no Ensino Superior", "Informar a quantidade de semestres. Pontuação: 1,0 ponto/semestre.", 1.0, 8.0),
         ("10.2 Docência no Fundamental/Médio", "Informar a quantidade de semestres. Pontuação: 0,3 ponto/semestre.", 0.3, 3.0),
         ("10.3 Atuação em EAD", "Informar a quantidade de semestres. Pontuação: 0,2 ponto/semestre.", 0.2, 2.0),
-        ("10.4 Atividades profissionais relacionadas", "Informar a quantidade de semestres. Pontuação: 0,25 ponto/semestre. Não serão pontuadas atividades de estágio. Anexar certificado ou registro em carteira de trabalho.", 0.25, 4.0)
+        ("10.4 Atividades profissionais relacionadas", "Informar a quantidade de semestres. Pontuação: 0,25 ponto/semestre.", 0.25, 4.0)
     ]
 
     comprovantes = {}
@@ -128,7 +126,7 @@ with aba3:
         qtd = st.number_input(f"Quantidade de '{item}'", min_value=0, step=1)
         comprovantes[item] = st.file_uploader(f"Anexe o comprovante único em PDF para '{item}'", type="pdf", key=f"file_{item}")
         if qtd > 0 and comprovantes[item] is None:
-            st.warning(f"Você preencheu o item '{item}' com quantidade {qtd}, mas não anexou o comprovante correspondente. Isso é obrigatório.")
+            st.warning(f"Você preencheu o item '{item}' com quantidade {qtd}, mas não anexou o comprovante correspondente.")
         total = min(qtd * ponto, maximo) if maximo > 0 else qtd * ponto
         dados.append((item, qtd, total))
 
@@ -138,50 +136,45 @@ with aba3:
 
     if st.button("📄 Gerar Relatório Final em PDF"):
         buffer = BytesIO()
-        doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=40)
+        doc = SimpleDocTemplate(buffer, pagesize=A4)
         styles = getSampleStyleSheet()
         elements = []
 
-        # Seção 1: Inscrição
-        elements.append(Paragraph("Inscrição", styles['Title']))
-        elements.append(Spacer(1, 12))
+        # Seção Inscrição e Linha de Pesquisa
+        elements.append(Paragraph("Inscrição e Linha de Pesquisa", styles['Title']))
         elements += [
-            Paragraph(f"<b>Nome:</b> {nome}", styles['Normal']),
-            Paragraph(f"<b>CPF:</b> {cpf}", styles['Normal']),
-            Paragraph(f"<b>Sexo:</b> {sexo}", styles['Normal']),
-            Paragraph(f"<b>Modalidade:</b> {modalidade}", styles['Normal']),
-            Paragraph(f"<b>Quota:</b> {quota}", styles['Normal']),
+            Paragraph(f"Nome: {nome}", styles['Normal']),
+            Paragraph(f"CPF: {cpf}", styles['Normal']),
+            Paragraph(f"Sexo: {sexo}", styles['Normal']),
+            Paragraph(f"Modalidade: {modalidade}", styles['Normal']),
+            Paragraph(f"Quota: {quota}", styles['Normal']),
+            Paragraph(f"Email: {email}", styles['Normal']),
+            Paragraph(f"Data de Nascimento: {data_nascimento.strftime('%d/%m/%Y')}", styles['Normal']),
+            Paragraph(f"Ano de Conclusão: {ano_conclusao}", styles['Normal']),
+            Paragraph(f"Linha Selecionada: {linha}", styles['Normal']),
         ]
+        elements.append(Spacer(1, 12))
+
+        # Subáreas
+        elements.append(Paragraph("Subáreas Selecionadas:", styles['Heading2']))
+        data_subareas = [["Ordem", "Subárea"]] + [[str(ordem), sub] for ordem, sub in sorted(ordem_pref, key=lambda x: x[0])]
+        table = Table(data_subareas, colWidths=[50, 400])
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,0), colors.grey),
+            ('TEXTCOLOR',(0,0),(-1,0),colors.whitesmoke),
+            ('ALIGN',(0,0),(-1,-1),'LEFT'),
+            ('GRID', (0,0), (-1,-1), 0.5, colors.black),
+            ('FONTSIZE', (0,0), (-1,-1), 8),
+        ]))
+        elements.append(table)
         elements.append(PageBreak())
 
-        # Seção 2: Linha de Pesquisa
-        elements.append(Paragraph("Seleção da Linha de Pesquisa", styles['Title']))
-        elements.append(Spacer(1, 12))
-        elements += [
-            Paragraph(f"<b>Email:</b> {email}", styles['Normal']),
-            Paragraph(f"<b>Data de Nascimento:</b> {data_nascimento.strftime('%d/%m/%Y')}", styles['Normal']),
-            Paragraph(f"<b>Ano de Conclusão:</b> {ano_conclusao}", styles['Normal']),
-            Paragraph(f"<b>Linha Selecionada:</b> {linha}", styles['Normal']),
-        ]
-
-        # Subáreas Selecionadas
-        elements.append(Spacer(1, 12))
-        elements.append(Paragraph("<b>Subáreas Selecionadas (ordem de preferência):</b>", styles['Normal']))
-        subareas = subareas_l1 if "Linha 1" in linha else subareas_l2
-        ordem_subareas = sorted(zip(ordem_pref, subareas), key=lambda x: x[0])
-        for ordem, subarea in ordem_subareas:
-            elements.append(Paragraph(f"{ordem} - {subarea}", styles['Normal']))
-
-        elements.append(PageBreak())
-
-        # Seção 3: Pontuação
+        # Pontuação
         elements.append(Paragraph("Pontuação do Currículo", styles['Title']))
-        elements.append(Spacer(1, 12))
         for item, qtd, total in dados:
-            elements.append(Paragraph(f"{item}: {qtd} unidades - Total: {total:.2f} pontos", styles['Normal']))
-        elements.append(Spacer(1, 12))
-        elements.append(Paragraph(f"<b>Média do Histórico Escolar:</b> {historico_media:.2f}", styles['Normal']))
-        elements.append(Paragraph(f"<b>Pontuação Total do Currículo:</b> {pontuacao_total:.2f} pontos", styles['Normal']))
+            elements.append(Paragraph(f"{item}: {qtd} - Total: {total:.2f}", styles['Normal']))
+        elements.append(Paragraph(f"Média do Histórico Escolar: {historico_media:.2f}", styles['Normal']))
+        elements.append(Paragraph(f"Pontuação Total do Currículo: {pontuacao_total:.2f}", styles['Normal']))
 
         doc.build(elements)
 
