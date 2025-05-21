@@ -163,6 +163,15 @@ with aba3:
             Paragraph(f"<b>Ano de Conclusão:</b> {ano_conclusao}", styles['Normal']),
             Paragraph(f"<b>Linha Selecionada:</b> {linha}", styles['Normal']),
         ]
+
+        # Subáreas Selecionadas
+        elements.append(Spacer(1, 12))
+        elements.append(Paragraph("<b>Subáreas Selecionadas (ordem de preferência):</b>", styles['Normal']))
+        subareas = subareas_l1 if "Linha 1" in linha else subareas_l2
+        ordem_subareas = sorted(zip(ordem_pref, subareas), key=lambda x: x[0])
+        for ordem, subarea in ordem_subareas:
+            elements.append(Paragraph(f"{ordem} - {subarea}", styles['Normal']))
+
         elements.append(PageBreak())
 
         # Seção 3: Pontuação
