@@ -142,24 +142,25 @@ with aba3:
 
     st.subheader(f"📈 Pontuação Final: {pontuacao_total:.2f} pontos")
 
-    # ✅ Botão salvar progresso COMPLETO
-save_data = {
-    'nome': nome,
-    'cpf': cpf,
-    'sexo': sexo,
-    'modalidade': modalidade,
-    'quota': quota,
-    'email': email,
-    'data_nascimento': str(data_nascimento),
-    'ano_conclusao': ano_conclusao,
-    'linha': linha,
-    'ordem_pref': ordem_pref,  # <-- adiciona a ordem das subáreas
-    'historico_media': historico_media,  # também importante salvar
-    'pontuacao': {item: qtd for item, qtd, _ in dados}  # <-- salva as quantidades dos itens
-}
+      # ✅ Botão salvar progresso COMPLETO
+    save_data = {
+        'nome': nome,
+        'cpf': cpf,
+        'sexo': sexo,
+        'modalidade': modalidade,
+        'quota': quota,
+        'email': email,
+        'data_nascimento': str(data_nascimento),
+        'ano_conclusao': ano_conclusao,
+        'linha': linha,
+        'ordem_pref': ordem_pref,
+        'historico_media': historico_media,
+        'pontuacao': {item: qtd for item, qtd, _ in dados}
+    }
+
     b = BytesIO()
-b.write(json.dumps(save_data, indent=2, ensure_ascii=False).encode('utf-8'))
-st.download_button("💾 Salvar Progresso", b.getvalue(), "progresso_ppgaig.json", mime="application/json")
+    b.write(json.dumps(save_data, indent=2, ensure_ascii=False).encode('utf-8'))
+    st.download_button("💾 Salvar Progresso", b.getvalue(), "progresso_ppgaig.json", mime="application/json")
 
 
     # ✅ Validação das ordens antes do botão PDF
