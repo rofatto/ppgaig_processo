@@ -39,7 +39,6 @@ with aba2:
     st.header("Seleção da Linha de Pesquisa")
     email = st.text_input("Email")
     from datetime import date
-
     data_nascimento = st.date_input("Data de Nascimento (ANO/MÊS/DIA)", value=date(1990, 1, 1), min_value=date(1900, 1, 1), max_value=date.today())
     ano_conclusao = st.number_input("Ano de Conclusão do Curso de Graduação", 1950, 2100)
 
@@ -135,84 +134,95 @@ with aba3:
 
     st.subheader(f"📈 Pontuação Final: {pontuacao_total:.2f} pontos")
 
-    if st.button("📄 Gerar Relatório Final em PDF"):
-        if not historico_pdf:
-            st.error("❗ Histórico Escolar obrigatório não foi anexado.")
-        elif not all([identidade_pdf, registro_civil_pdf, quitacao_pdf, diploma_pdf]):
-            st.error("❗ Todos documentos obrigatórios da inscrição devem ser anexados.")
-        else:
-            buffer = BytesIO()
-            doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=40)
-            styles = getSampleStyleSheet()
-            elements = []
+    # ✅ Validação das ordens antes do botão PDF
+    ordens = [ordem for ordem, _ in ordem_pref]
+    if len(ordens) != len(set(ordens)):
+        st.error("❗ Há ordens repetidas nas subáreas! Por favor, atribua uma ordem única para cada subárea.")
+    else:
+        if st.button("📄 Gerar Relatório Final em PDF"):
+            if not historico_pdf:
+                st.error("❗ Histórico Escolar obrigatório não foi anexado.")
+            elif not all([identidade_pdf, registro_civil_pdf, quitacao_pdf, diploma_pdf]):
+                st.error("❗ Todos documentos obrigatórios da inscrição devem ser anexados.")
+            else:
+                buffer = BytesIO()
+                doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=40)
+                styles = getSampleStyleSheet()
+                elements = []
 
-            elements.append(Paragraph("Inscrição", styles['Title']))
-            elements += [Paragraph(f"<b>{label}:</b> {valor}", styles['Normal']) for label, valor in [
-                ("Nome", nome), ("CPF", cpf), ("Sexo", sexo), ("Modalidade", modalidade), ("Quota", quota),
-                ("Email", email), ("Data de Nascimento", data_nascimento.strftime('%d/%m/%Y')),
-                ("Ano de Conclusão", ano_conclusao), ("Linha Selecionada", linha)
-            ]]
+                elements.append(Paragraph("Inscrição", styles['Title']))
+                elements += [Paragraph(f"<b>{label}:</b> {valor}", styles['Normal']) for label, valor in [
+                    ("Nome", nome), ("CPF", cpf), ("Sexo", sexo), ("Modalidade", modalidade), ("Quota", quota),
+                    ("Email", email), ("Data de Nascimento", data_nascimento.strftime('%d/%m/%Y')),
+                    ("Ano de Conclusão", ano_conclusao), ("Linha Selecionada", linha)
+                ]]
 
-            elements.append(Spacer(1, 12))
-            elements.append(Paragraph("Subáreas Selecionadas", styles['Heading2']))
-            subareas_tab = sorted(ordem_pref, key=lambda x: x[0])
-            table_data = [["Ordem", "Subárea"]] + [[ordem, Paragraph(sub, ParagraphStyle('subarea', fontSize=9))] for ordem, sub in subareas_tab]
-            table = Table(table_data, colWidths=[50, 400])
-            table.setStyle(TableStyle([
-                ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
-                ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-                ('WORDWRAP', (1, 1), (-1, -1), 'CJK'),
-                ('VALIGN', (0, 0), (-1, -1), 'TOP')
-            ]))
-            elements.append(table)
-            elements.append(PageBreak())
+                elements.append(Spacer(1, 12))
+                elements.append(Paragraph("Subáreas Selecionadas", styles['Heading2']))
+                subareas_tab = sorted(ordem_pref, key=lambda x: x[0])
+                table_data = [["Ordem", "Subárea"]] + [
+                    [ordem, Paragraph(sub, ParagraphStyle('subarea', fontSize=9))] for ordem, sub in subareas_tab
+                ]
+                table = Table(table_data, colWidths=[50, 400])
+                table.setStyle(TableStyle([
+                    ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+                    ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+                    ('WORDWRAP', (1, 1), (-1, -1), 'CJK'),
+                    ('VALIGN', (0, 0), (-1, -1), 'TOP')
+                ]))
+                elements.append(table)
+                elements.append(PageBreak())
 
-            elements.append(Paragraph("Pontuação do Currículo", styles['Title']))
-            table_data = [["Item", "Quantidade", "Total"]] + [
-                [Paragraph(item, ParagraphStyle('item', fontSize=8)), qtd, f"{total:.2f}"] for item, qtd, total in dados
-            ]
-            pont_table = Table(table_data, colWidths=[300, 70, 70])
-            pont_table.setStyle(TableStyle([
-                ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
-                ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
-                ('WORDWRAP', (0, 1), (0, -1), 'CJK')
-            ]))
-            elements.append(pont_table)
+                elements.append(Paragraph("Pontuação do Currículo", styles['Title']))
+                table_data = [["Item", "Quantidade", "Total"]] + [
+                    [Paragraph(item, ParagraphStyle('item', fontSize=8)), qtd, f"{total:.2f}"] for item, qtd, total in dados
+                ]
+                pont_table = Table(table_data, colWidths=[300, 70, 70])
+                pont_table.setStyle(TableStyle([
+                    ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+                    ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
+                    ('WORDWRAP', (0, 1), (0, -1), 'CJK')
+                ]))
+                elements.append(pont_table)
 
-            elements.append(Spacer(1, 12))
-            elements.append(Paragraph(f"Média do Histórico Escolar: {historico_media:.2f}", styles['Normal']))
-            elements.append(Paragraph(f"Pontuação Total do Currículo: {pontuacao_total:.2f}", styles['Normal']))
+                elements.append(Spacer(1, 12))
+                elements.append(Paragraph(f"Média do Histórico Escolar: {historico_media:.2f}", styles['Normal']))
+                elements.append(Paragraph(f"Pontuação Total do Currículo: {pontuacao_total:.2f}", styles['Normal']))
 
-            doc.build(elements)
-            buffer.seek(0)
-            merger = PdfMerger()
-            merger.append(PdfReader(buffer))
+                doc.build(elements)
+                buffer.seek(0)
+                merger = PdfMerger()
+                merger.append(PdfReader(buffer))
 
-            for label, pdf_file in [
-                ("Documento de identidade", identidade_pdf), ("Registro civil", registro_civil_pdf),
-                ("Comprovante de quitação eleitoral", quitacao_pdf), ("Diploma ou Certificado", diploma_pdf),
-                ("Certificado de reservista", reservista_pdf), ("Comprovante de quota", quota_pdf),
-                ("Histórico Escolar", historico_pdf)
-            ]:
-                if pdf_file:
-                    capa_buffer = BytesIO()
-                    SimpleDocTemplate(capa_buffer, pagesize=A4).build([Spacer(1, 250), Paragraph(label, styles['Title'])])
-                    capa_buffer.seek(0)
-                    merger.append(PdfReader(capa_buffer))
-                    pdf_file.seek(0)
-                    merger.append(PdfReader(pdf_file))
+                for label, pdf_file in [
+                    ("Documento de identidade", identidade_pdf), ("Registro civil", registro_civil_pdf),
+                    ("Comprovante de quitação eleitoral", quitacao_pdf), ("Diploma ou Certificado", diploma_pdf),
+                    ("Certificado de reservista", reservista_pdf), ("Comprovante de quota", quota_pdf),
+                    ("Histórico Escolar", historico_pdf)
+                ]:
+                    if pdf_file:
+                        capa_buffer = BytesIO()
+                        SimpleDocTemplate(capa_buffer, pagesize=A4).build(
+                            [Spacer(1, 250), Paragraph(label, styles['Title'])]
+                        )
+                        capa_buffer.seek(0)
+                        merger.append(PdfReader(capa_buffer))
+                        pdf_file.seek(0)
+                        merger.append(PdfReader(pdf_file))
 
-            for item, qtd, _ in dados:
-                if qtd > 0 and comprovantes[item]:
-                    capa_buffer = BytesIO()
-                    SimpleDocTemplate(capa_buffer, pagesize=A4).build([Spacer(1, 250), Paragraph(f"Comprovante: {item}", styles['Title'])])
-                    capa_buffer.seek(0)
-                    merger.append(PdfReader(capa_buffer))
-                    comprovantes[item].seek(0)
-                    merger.append(PdfReader(comprovantes[item]))
+                for item, qtd, _ in dados:
+                    if qtd > 0 and comprovantes[item]:
+                        capa_buffer = BytesIO()
+                        SimpleDocTemplate(capa_buffer, pagesize=A4).build(
+                            [Spacer(1, 250), Paragraph(f"Comprovante: {item}", styles['Title'])]
+                        )
+                        capa_buffer.seek(0)
+                        merger.append(PdfReader(capa_buffer))
+                        comprovantes[item].seek(0)
+                        merger.append(PdfReader(comprovantes[item]))
 
-            final_output = BytesIO()
-            merger.write(final_output)
-            merger.close()
-            st.success("✅ PDF gerado com sucesso!")
-            st.download_button("⬇️ Baixar PDF Consolidado", final_output.getvalue(), file_name="formulario_ppgaig.pdf", mime="application/pdf")
+                final_output = BytesIO()
+                merger.write(final_output)
+                merger.close()
+                st.success("✅ PDF gerado com sucesso!")
+                st.download_button("⬇️ Baixar PDF Consolidado", final_output.getvalue(), file_name="formulario_ppgaig.pdf", mime="application/pdf")
