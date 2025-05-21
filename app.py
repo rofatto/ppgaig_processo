@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-import json
 from io import BytesIO
 from PyPDF2 import PdfMerger, PdfReader
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak, Table, TableStyle
@@ -10,71 +9,48 @@ from reportlab.lib import colors
 
 st.set_page_config(page_title="Formulário PPGAIG", layout="wide")
 
-if 'saved_data' not in st.session_state:
-    st.session_state['saved_data'] = {}
-
-# Função para salvar progresso
-def save_progress():
-    save_data = {
-        'nome': nome,
-        'cpf': cpf,
-        'sexo': sexo,
-        'modalidade': modalidade,
-        'quota': quota,
-        'email': email,
-        'data_nascimento': str(data_nascimento),
-        'ano_conclusao': ano_conclusao,
-        'linha': linha,
-        'ordem_pref': ordem_pref,
-        'historico_media': historico_media,
-        'pontuacao': pontuacao_total
-    }
-    b = BytesIO()
-    b.write(json.dumps(save_data).encode())
-    st.download_button("💾 Salvar Progresso", b.getvalue(), "progresso_ppgaig.json", mime="application/json")
-
-# Função para carregar progresso
-uploaded_progress = st.file_uploader("📂 Carregar Progresso", type="json")
-if uploaded_progress:
-    loaded_data = json.load(uploaded_progress)
-    for key in loaded_data:
-        st.session_state[key] = loaded_data[key]
-    st.success("✅ Progresso carregado com sucesso!")
-
 # Abas do formulário
 aba1, aba2, aba3 = st.tabs(["Inscrição", "Seleção da Linha de Pesquisa", "Pontuação do Currículo"])
 
 # Inscrição
 with aba1:
     st.header("Inscrição")
-    nome = st.text_input("Nome completo", st.session_state.get('nome', ''))
-    cpf = st.text_input("CPF", st.session_state.get('cpf', ''))
-    sexo = st.radio("Sexo", ["Masculino", "Feminino", "Prefiro não identificar"], index=["Masculino", "Feminino", "Prefiro não identificar"].index(st.session_state.get('sexo', "Masculino")))
-    modalidade = st.radio("Modalidade", ["Regular", "Especial"], index=["Regular", "Especial"].index(st.session_state.get('modalidade', "Regular")))
-    quota = st.selectbox("Tipo de Quota", ["Ampla Concorrência", "Pretos, Pardos, Indígenas", "Pessoas com Deficiência", "Pessoas sob políticas humanitárias no Brasil"], index=["Ampla Concorrência", "Pretos, Pardos, Indígenas", "Pessoas com Deficiência", "Pessoas sob políticas humanitárias no Brasil"].index(st.session_state.get('quota', "Ampla Concorrência")))
+    nome = st.text_input("Nome completo")
+    cpf = st.text_input("CPF")
+    sexo = st.radio("Sexo", ["Masculino", "Feminino", "Prefiro não identificar"])
+    modalidade = st.radio("Modalidade", ["Regular", "Especial"])
+    quota = st.selectbox("Tipo de Quota", ["Ampla Concorrência", "Pretos, Pardos, Indígenas", "Pessoas com Deficiência", "Pessoas sob políticas humanitárias no Brasil"])
 
-    identidade_pdf = st.file_uploader("Documento de identidade (mesclado PDF)", type="pdf", key="identidade")
-    registro_civil_pdf = st.file_uploader("Registro civil (nascimento ou casamento)", type="pdf", key="registro")
-    quitacao_pdf = st.file_uploader("Comprovante de quitação eleitoral", type="pdf", key="quitacao")
-    diploma_pdf = st.file_uploader("Diploma ou Certificado de Conclusão da Graduação", type="pdf", key="diploma")
+    identidade_pdf = st.file_uploader("Documento de identidade (com CPF ou RG e CPF separados, mas mesclados em um único PDF) *", type="pdf")
+    registro_civil_pdf = st.file_uploader("Registro civil (nascimento ou casamento) *", type="pdf")
+    quitacao_pdf = st.file_uploader("Comprovante de quitação eleitoral *", type="pdf")
+    diploma_pdf = st.file_uploader("Diploma ou Certificado de Conclusão da Graduação *", type="pdf")
 
     reservista_pdf = None
     if sexo == "Masculino":
-        reservista_pdf = st.file_uploader("Certificado de reservista", type="pdf", key="reservista")
-    
+        reservista_pdf = st.file_uploader("Certificado de reservista *", type="pdf")
+
     quota_pdf = None
     if quota != "Ampla Concorrência":
-        quota_pdf = st.file_uploader("Comprovante para quotas", type="pdf", key="quota")
+        quota_pdf = st.file_uploader("Comprovante para quotas *", type="pdf")
 
 # Seleção da Linha de Pesquisa
 with aba2:
     st.header("Seleção da Linha de Pesquisa")
-    email = st.text_input("Email", st.session_state.get('email', ''))
+    email = st.text_input("Email")
     from datetime import date
-    data_nascimento = st.date_input("Data de Nascimento (ANO/MÊS/DIA)", value=pd.to_datetime(st.session_state.get('data_nascimento', '1990-01-01')), min_value=date(1900,1,1), max_value=date.today())
-    ano_conclusao = st.number_input("Ano de Conclusão do Curso de Graduação", 1950, 2100, value=st.session_state.get('ano_conclusao', 2024))
 
-    linha = st.radio("Selecione apenas 1 (uma) linha de pesquisa:", ["Linha 1: Desenvolvimento e aplicações de métodos em informações geoespaciais", "Linha 2: Sistemas integrados de produção vegetal"], index=["Linha 1: Desenvolvimento e aplicações de métodos em informações geoespaciais", "Linha 2: Sistemas integrados de produção vegetal"].index(st.session_state.get('linha', "Linha 1: Desenvolvimento e aplicações de métodos em informações geoespaciais")))
+    data_nascimento = st.date_input("Data de Nascimento (ANO/MÊS/DIA)", value=date(1990, 1, 1), min_value=date(1900, 1, 1), max_value=date.today())
+    ano_conclusao = st.number_input("Ano de Conclusão do Curso de Graduação", 1950, 2100)
+
+    linha = st.radio("Selecione apenas 1 (uma) linha de pesquisa:", ["Linha 1: Desenvolvimento e aplicações de métodos em informações geoespaciais", "Linha 2: Sistemas integrados de produção vegetal"])
+
+    st.markdown("""
+    📝 **Classifique as subáreas por ordem de preferência:**
+    - Utilize os botões “+” e “–” para atribuir uma ordem de **1 (maior interesse)** a **5 (menor interesse)** – *caso tenha selecionado a Linha 1*.
+    - Caso tenha selecionado a Linha 2, a ordem vai de **1 (maior interesse) a 13 (menor interesse)**.
+    - Cada número de ordem só pode ser usado uma vez.
+    """)
 
     subareas_l1 = [
         "Sensoriamento Remoto de Sistemas Agrícolas",
@@ -159,8 +135,6 @@ with aba3:
 
     st.subheader(f"📈 Pontuação Final: {pontuacao_total:.2f} pontos")
 
-    save_progress()  # Chamada para salvar
-
     if st.button("📄 Gerar Relatório Final em PDF"):
         if not historico_pdf:
             st.error("❗ Histórico Escolar obrigatório não foi anexado.")
@@ -182,9 +156,7 @@ with aba3:
             elements.append(Spacer(1, 12))
             elements.append(Paragraph("Subáreas Selecionadas", styles['Heading2']))
             subareas_tab = sorted(ordem_pref, key=lambda x: x[0])
-            table_data = [["Ordem", "Subárea"]] + [
-                [ordem, Paragraph(sub, ParagraphStyle('subarea', fontSize=9))] for ordem, sub in subareas_tab
-            ]
+            table_data = [["Ordem", "Subárea"]] + [[ordem, Paragraph(sub, ParagraphStyle('subarea', fontSize=9))] for ordem, sub in subareas_tab]
             table = Table(table_data, colWidths=[50, 400])
             table.setStyle(TableStyle([
                 ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
@@ -213,11 +185,9 @@ with aba3:
 
             doc.build(elements)
             buffer.seek(0)
-
             merger = PdfMerger()
             merger.append(PdfReader(buffer))
 
-            # Mesclagem dos documentos obrigatórios
             for label, pdf_file in [
                 ("Documento de identidade", identidade_pdf), ("Registro civil", registro_civil_pdf),
                 ("Comprovante de quitação eleitoral", quitacao_pdf), ("Diploma ou Certificado", diploma_pdf),
@@ -226,21 +196,16 @@ with aba3:
             ]:
                 if pdf_file:
                     capa_buffer = BytesIO()
-                    SimpleDocTemplate(capa_buffer, pagesize=A4).build(
-                        [Spacer(1, 250), Paragraph(label, styles['Title'])]
-                    )
+                    SimpleDocTemplate(capa_buffer, pagesize=A4).build([Spacer(1, 250), Paragraph(label, styles['Title'])])
                     capa_buffer.seek(0)
                     merger.append(PdfReader(capa_buffer))
                     pdf_file.seek(0)
                     merger.append(PdfReader(pdf_file))
 
-            # Mesclagem dos comprovantes de pontuação
             for item, qtd, _ in dados:
                 if qtd > 0 and comprovantes[item]:
                     capa_buffer = BytesIO()
-                    SimpleDocTemplate(capa_buffer, pagesize=A4).build(
-                        [Spacer(1, 250), Paragraph(f"Comprovante: {item}", styles['Title'])]
-                    )
+                    SimpleDocTemplate(capa_buffer, pagesize=A4).build([Spacer(1, 250), Paragraph(f"Comprovante: {item}", styles['Title'])])
                     capa_buffer.seek(0)
                     merger.append(PdfReader(capa_buffer))
                     comprovantes[item].seek(0)
@@ -249,11 +214,5 @@ with aba3:
             final_output = BytesIO()
             merger.write(final_output)
             merger.close()
-
             st.success("✅ PDF gerado com sucesso!")
-            st.download_button(
-                "⬇️ Baixar PDF Consolidado",
-                final_output.getvalue(),
-                file_name="formulario_ppgaig.pdf",
-                mime="application/pdf"
-            )
+            st.download_button("⬇️ Baixar PDF Consolidado", final_output.getvalue(), file_name="formulario_ppgaig.pdf", mime="application/pdf")
