@@ -25,13 +25,9 @@ with aba1:
     st.header("Inscrição")
     nome = st.text_input("Nome completo", st.session_state.get('nome', ''))
     cpf = st.text_input("CPF", st.session_state.get('cpf', ''))
-    sexo = st.radio("Sexo", ["Masculino", "Feminino", "Prefiro não identificar"],
-                    index=["Masculino", "Feminino", "Prefiro não identificar"].index(st.session_state.get('sexo', "Masculino")))
-    modalidade = st.radio("Modalidade", ["Regular", "Especial"],
-                          index=["Regular", "Especial"].index(st.session_state.get('modalidade', "Regular")))
-    quota = st.selectbox("Tipo de Quota",
-                         ["Ampla Concorrência", "Pretos, Pardos, Indígenas", "Pessoas com Deficiência", "Pessoas sob políticas humanitárias no Brasil"],
-                         index=["Ampla Concorrência", "Pretos, Pardos, Indígenas", "Pessoas com Deficiência", "Pessoas sob políticas humanitárias no Brasil"].index(st.session_state.get('quota', "Ampla Concorrência")))
+    sexo = st.radio("Sexo", ["Masculino", "Feminino", "Prefiro não identificar"], index=["Masculino", "Feminino", "Prefiro não identificar"].index(st.session_state.get('sexo', "Masculino")))
+    modalidade = st.radio("Modalidade", ["Regular", "Especial"], index=["Regular", "Especial"].index(st.session_state.get('modalidade', "Regular")))
+    quota = st.selectbox("Tipo de Quota", ["Ampla Concorrência", "Pretos, Pardos, Indígenas", "Pessoas com Deficiência", "Pessoas sob políticas humanitárias no Brasil"], index=["Ampla Concorrência", "Pretos, Pardos, Indígenas", "Pessoas com Deficiência", "Pessoas sob políticas humanitárias no Brasil"].index(st.session_state.get('quota', "Ampla Concorrência")))
 
     identidade_pdf = st.file_uploader("Documento de identidade (com CPF ou RG e CPF separados, mas mesclados em um único PDF) *", type="pdf")
     registro_civil_pdf = st.file_uploader("Registro civil (nascimento ou casamento) *", type="pdf")
@@ -51,12 +47,10 @@ with aba2:
     st.header("Seleção da Linha de Pesquisa")
     email = st.text_input("Email", st.session_state.get('email', ''))
     from datetime import date
-    data_nascimento = st.date_input("Data de Nascimento (ANO/MÊS/DIA)", value=pd.to_datetime(st.session_state.get('data_nascimento', '1990-01-01')))
+    data_nascimento = st.date_input("Data de Nascimento (ANO/MÊS/DIA)", value=pd.to_datetime(st.session_state.get('data_nascimento', '1990-01-01')), min_value=date(1900, 1, 1), max_value=date.today())
     ano_conclusao = st.number_input("Ano de Conclusão do Curso de Graduação", 1950, 2100, value=st.session_state.get('ano_conclusao', 2024))
 
-    linha = st.radio("Selecione apenas 1 (uma) linha de pesquisa:",
-                     ["Linha 1: Desenvolvimento e aplicações de métodos em informações geoespaciais", "Linha 2: Sistemas integrados de produção vegetal"],
-                     index=["Linha 1: Desenvolvimento e aplicações de métodos em informações geoespaciais", "Linha 2: Sistemas integrados de produção vegetal"].index(st.session_state.get('linha', "Linha 1: Desenvolvimento e aplicações de métodos em informações geoespaciais")))
+    linha = st.radio("Selecione apenas 1 (uma) linha de pesquisa:", ["Linha 1: Desenvolvimento e aplicações de métodos em informações geoespaciais", "Linha 2: Sistemas integrados de produção vegetal"], index=["Linha 1: Desenvolvimento e aplicações de métodos em informações geoespaciais", "Linha 2: Sistemas integrados de produção vegetal"].index(st.session_state.get('linha', "Linha 1: Desenvolvimento e aplicações de métodos em informações geoespaciais")))
 
     st.markdown("""
     📝 **Classifique as subáreas por ordem de preferência:**
@@ -91,11 +85,10 @@ with aba2:
 
     subareas = subareas_l1 if "Linha 1" in linha else subareas_l2
 
-    saved_ordem = dict(st.session_state.get('ordem_pref', []))
     ordem_pref = []
     ordem_usada = set()
     for sub in subareas:
-        ordem = st.number_input(sub, 1, len(subareas), key=f"sub_{sub}", value=saved_ordem.get(sub, 1))
+        ordem = st.number_input(sub, 1, len(subareas), key=f"sub_{sub}")
         if ordem in ordem_usada:
             st.warning(f"Ordem {ordem} já usada. Escolha uma ordem única para cada subárea.")
         ordem_usada.add(ordem)
@@ -133,13 +126,12 @@ with aba3:
         ("10.4 Atividades profissionais relacionadas", "0,25 ponto/semestre. Máx: 4,0 pontos.", 0.25, 4.0)
     ]
 
-    saved_pontuacao = st.session_state.get('pontuacao', {})
     comprovantes = {}
     dados = []
 
     for item, desc, ponto, maximo in itens:
         st.markdown(f"**{item}** — {desc}")
-        qtd = st.number_input(f"Quantidade de '{item}'", min_value=0, step=1, value=saved_pontuacao.get(item, 0))
+        qtd = st.number_input(f"Quantidade de '{item}'", min_value=0, step=1)
         comprovantes[item] = st.file_uploader(f"Anexe o comprovante único em PDF para '{item}'", type="pdf", key=f"file_{item}")
         if qtd > 0 and comprovantes[item] is None:
             st.warning(f"Preencheu '{item}' com quantidade {qtd}, mas não anexou o comprovante.")
@@ -150,24 +142,13 @@ with aba3:
 
     st.subheader(f"📈 Pontuação Final: {pontuacao_total:.2f} pontos")
 
-    # ✅ Botão salvar progresso COMPLETO
+    # ✅ Botão salvar
     save_data = {
-        'nome': nome,
-        'cpf': cpf,
-        'sexo': sexo,
-        'modalidade': modalidade,
-        'quota': quota,
-        'email': email,
-        'data_nascimento': str(data_nascimento),
-        'ano_conclusao': ano_conclusao,
-        'linha': linha,
-        'ordem_pref': ordem_pref,
-        'historico_media': historico_media,
-        'pontuacao': {item: qtd for item, qtd, _ in dados}
+        'nome': nome, 'cpf': cpf, 'sexo': sexo, 'modalidade': modalidade, 'quota': quota,
+        'email': email, 'data_nascimento': str(data_nascimento), 'ano_conclusao': ano_conclusao, 'linha': linha
     }
-
     b = BytesIO()
-    b.write(json.dumps(save_data, indent=2, ensure_ascii=False).encode('utf-8'))
+    b.write(json.dumps(save_data).encode())
     st.download_button("💾 Salvar Progresso", b.getvalue(), "progresso_ppgaig.json", mime="application/json")
 
     # ✅ Validação das ordens antes do botão PDF
@@ -176,83 +157,89 @@ with aba3:
         st.error("❗ Há ordens repetidas nas subáreas! Por favor, atribua uma ordem única para cada subárea.")
     else:
         if st.button("📄 Gerar Relatório Final em PDF"):
-                       buffer = BytesIO()
-            doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=40)
-            styles = getSampleStyleSheet()
-            elements = []
+            if not historico_pdf:
+                st.error("❗ Histórico Escolar obrigatório não foi anexado.")
+            elif not all([identidade_pdf, registro_civil_pdf, quitacao_pdf, diploma_pdf]):
+                st.error("❗ Todos documentos obrigatórios da inscrição devem ser anexados.")
+            else:
+                buffer = BytesIO()
+                doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=40)
+                styles = getSampleStyleSheet()
+                elements = []
 
-            elements.append(Paragraph("Inscrição", styles['Title']))
-            elements += [Paragraph(f"<b>{label}:</b> {valor}", styles['Normal']) for label, valor in [
-                ("Nome", nome), ("CPF", cpf), ("Sexo", sexo), ("Modalidade", modalidade), ("Quota", quota),
-                ("Email", email), ("Data de Nascimento", data_nascimento.strftime('%d/%m/%Y')),
-                ("Ano de Conclusão", ano_conclusao), ("Linha Selecionada", linha)
-            ]]
+                elements.append(Paragraph("Inscrição", styles['Title']))
+                elements += [Paragraph(f"<b>{label}:</b> {valor}", styles['Normal']) for label, valor in [
+                    ("Nome", nome), ("CPF", cpf), ("Sexo", sexo), ("Modalidade", modalidade), ("Quota", quota),
+                    ("Email", email), ("Data de Nascimento", data_nascimento.strftime('%d/%m/%Y')),
+                    ("Ano de Conclusão", ano_conclusao), ("Linha Selecionada", linha)
+                ]]
 
-            elements.append(Spacer(1, 12))
-            elements.append(Paragraph("Subáreas Selecionadas", styles['Heading2']))
-            subareas_tab = sorted(ordem_pref, key=lambda x: x[0])
-            table_data = [["Ordem", "Subárea"]] + [[ordem, Paragraph(sub, ParagraphStyle('subarea', fontSize=9))] for ordem, sub in subareas_tab]
-            table = Table(table_data, colWidths=[50, 400])
-            table.setStyle(TableStyle([
-                ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
-                ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-                ('WORDWRAP', (1, 1), (-1, -1), 'CJK'),
-                ('VALIGN', (0, 0), (-1, -1), 'TOP')
-            ]))
-            elements.append(table)
-            elements.append(PageBreak())
+                elements.append(Spacer(1, 12))
+                elements.append(Paragraph("Subáreas Selecionadas", styles['Heading2']))
+                subareas_tab = sorted(ordem_pref, key=lambda x: x[0])
+                table_data = [["Ordem", "Subárea"]] + [
+                    [ordem, Paragraph(sub, ParagraphStyle('subarea', fontSize=9))] for ordem, sub in subareas_tab
+                ]
+                table = Table(table_data, colWidths=[50, 400])
+                table.setStyle(TableStyle([
+                    ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+                    ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+                    ('WORDWRAP', (1, 1), (-1, -1), 'CJK'),
+                    ('VALIGN', (0, 0), (-1, -1), 'TOP')
+                ]))
+                elements.append(table)
+                elements.append(PageBreak())
 
-            elements.append(Paragraph("Pontuação do Currículo", styles['Title']))
-            table_data = [["Item", "Quantidade", "Total"]] + [
-                [Paragraph(item, ParagraphStyle('item', fontSize=8)), qtd, f"{total:.2f}"] for item, qtd, total in dados
-            ]
-            pont_table = Table(table_data, colWidths=[300, 70, 70])
-            pont_table.setStyle(TableStyle([
-                ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
-                ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
-                ('WORDWRAP', (0, 1), (0, -1), 'CJK')
-            ]))
-            elements.append(pont_table)
+                elements.append(Paragraph("Pontuação do Currículo", styles['Title']))
+                table_data = [["Item", "Quantidade", "Total"]] + [
+                    [Paragraph(item, ParagraphStyle('item', fontSize=8)), qtd, f"{total:.2f}"] for item, qtd, total in dados
+                ]
+                pont_table = Table(table_data, colWidths=[300, 70, 70])
+                pont_table.setStyle(TableStyle([
+                    ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+                    ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
+                    ('WORDWRAP', (0, 1), (0, -1), 'CJK')
+                ]))
+                elements.append(pont_table)
 
-            elements.append(Spacer(1, 12))
-            elements.append(Paragraph(f"Média do Histórico Escolar: {historico_media:.2f}", styles['Normal']))
-            elements.append(Paragraph(f"Pontuação Total do Currículo: {pontuacao_total:.2f}", styles['Normal']))
+                elements.append(Spacer(1, 12))
+                elements.append(Paragraph(f"Média do Histórico Escolar: {historico_media:.2f}", styles['Normal']))
+                elements.append(Paragraph(f"Pontuação Total do Currículo: {pontuacao_total:.2f}", styles['Normal']))
 
-            doc.build(elements)
-            buffer.seek(0)
-            merger = PdfMerger()
-            merger.append(PdfReader(buffer))
+                doc.build(elements)
+                buffer.seek(0)
+                merger = PdfMerger()
+                merger.append(PdfReader(buffer))
 
-            for label, pdf_file in [
-                ("Documento de identidade", identidade_pdf), ("Registro civil", registro_civil_pdf),
-                ("Comprovante de quitação eleitoral", quitacao_pdf), ("Diploma ou Certificado", diploma_pdf),
-                ("Certificado de reservista", reservista_pdf), ("Comprovante de quota", quota_pdf),
-                ("Histórico Escolar", historico_pdf)
-            ]:
-                if pdf_file:
-                    capa_buffer = BytesIO()
-                    SimpleDocTemplate(capa_buffer, pagesize=A4).build(
-                        [Spacer(1, 250), Paragraph(label, styles['Title'])]
-                    )
-                    capa_buffer.seek(0)
-                    merger.append(PdfReader(capa_buffer))
-                    pdf_file.seek(0)
-                    merger.append(PdfReader(pdf_file))
+                for label, pdf_file in [
+                    ("Documento de identidade", identidade_pdf), ("Registro civil", registro_civil_pdf),
+                    ("Comprovante de quitação eleitoral", quitacao_pdf), ("Diploma ou Certificado", diploma_pdf),
+                    ("Certificado de reservista", reservista_pdf), ("Comprovante de quota", quota_pdf),
+                    ("Histórico Escolar", historico_pdf)
+                ]:
+                    if pdf_file:
+                        capa_buffer = BytesIO()
+                        SimpleDocTemplate(capa_buffer, pagesize=A4).build(
+                            [Spacer(1, 250), Paragraph(label, styles['Title'])]
+                        )
+                        capa_buffer.seek(0)
+                        merger.append(PdfReader(capa_buffer))
+                        pdf_file.seek(0)
+                        merger.append(PdfReader(pdf_file))
 
-            for item, qtd, _ in dados:
-                if qtd > 0 and comprovantes[item]:
-                    capa_buffer = BytesIO()
-                    SimpleDocTemplate(capa_buffer, pagesize=A4).build(
-                        [Spacer(1, 250), Paragraph(f"Comprovante: {item}", styles['Title'])]
-                    )
-                    capa_buffer.seek(0)
-                    merger.append(PdfReader(capa_buffer))
-                    comprovantes[item].seek(0)
-                    merger.append(PdfReader(comprovantes[item]))
+                for item, qtd, _ in dados:
+                    if qtd > 0 and comprovantes[item]:
+                        capa_buffer = BytesIO()
+                        SimpleDocTemplate(capa_buffer, pagesize=A4).build(
+                            [Spacer(1, 250), Paragraph(f"Comprovante: {item}", styles['Title'])]
+                        )
+                        capa_buffer.seek(0)
+                        merger.append(PdfReader(capa_buffer))
+                        comprovantes[item].seek(0)
+                        merger.append(PdfReader(comprovantes[item]))
 
-            final_output = BytesIO()
-            merger.write(final_output)
-            merger.close()
-            st.success("✅ PDF gerado com sucesso!")
-            st.download_button("⬇️ Baixar PDF Consolidado", final_output.getvalue(), file_name="formulario_ppgaig.pdf", mime="application/pdf")
-
+                final_output = BytesIO()
+                merger.write(final_output)
+                merger.close()
+                st.success("✅ PDF gerado com sucesso!")
+                st.download_button("⬇️ Baixar PDF Consolidado", final_output.getvalue(), file_name="formulario_ppgaig.pdf", mime="application/pdf")
