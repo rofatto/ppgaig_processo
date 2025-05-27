@@ -271,4 +271,7 @@ with aba3:
                 merger.write(final_output)
                 merger.close()
                 st.success("✅ PDF gerado com sucesso!")
-                st.download_button("⬇️ Baixar PDF Consolidado", final_output.getvalue(), file_name="formulario_ppgaig.pdf", mime="application/pdf")
+                nome_arquivo_pdf = f"formulario_ppgaig_{nome.replace(' ', '_')}.pdf"
+                st.download_button("⬇️ Baixar PDF Consolidado", final_output.getvalue(), file_name=nome_arquivo_pdf, mime="application/pdf")
+
+                #st.download_button("⬇️ Baixar PDF Consolidado", final_output.getvalue(), file_name="formulario_ppgaig.pdf", mime="application/pdf")
