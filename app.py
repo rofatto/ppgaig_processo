@@ -28,6 +28,8 @@ with aba1:
     sexo = st.radio("Sexo", ["Masculino", "Feminino", "Prefiro não identificar"], index=["Masculino", "Feminino", "Prefiro não identificar"].index(st.session_state.get('sexo', "Masculino")))
     modalidade = st.radio("Modalidade", ["Regular", "Especial"], index=["Regular", "Especial"].index(st.session_state.get('modalidade', "Regular")))
     quota = st.selectbox("Tipo de Quota", ["Ampla Concorrência", "Pretos, Pardos, Indígenas", "Pessoas com Deficiência", "Pessoas sob políticas humanitárias no Brasil"], index=["Ampla Concorrência", "Pretos, Pardos, Indígenas", "Pessoas com Deficiência", "Pessoas sob políticas humanitárias no Brasil"].index(st.session_state.get('quota', "Ampla Concorrência")))
+# Campo adicional: Candidato a bolsa
+    candidato_bolsa = st.radio("Deseja concorrer à bolsa?",["Sim", "Não"], index=["Sim", "Não"].index(st.session_state.get('candidato_bolsa', "Sim")))
 
     identidade_pdf = st.file_uploader("Documento de identidade (com CPF ou RG e CPF separados, mas mesclados em um único PDF) *", type="pdf")
     registro_civil_pdf = st.file_uploader("Registro civil (nascimento ou casamento) *", type="pdf")
@@ -155,6 +157,7 @@ with aba3:
         'sexo': sexo,
         'modalidade': modalidade,
         'quota': quota,
+        'candidato_bolsa': candidato_bolsa,
         'email': email,
         'data_nascimento': str(data_nascimento),
         'ano_conclusao': ano_conclusao,
@@ -187,7 +190,7 @@ with aba3:
 
                 elements.append(Paragraph("Inscrição", styles['Title']))
                 elements += [Paragraph(f"<b>{label}:</b> {valor}", styles['Normal']) for label, valor in [
-                    ("Nome", nome), ("CPF", cpf), ("Sexo", sexo), ("Modalidade", modalidade), ("Quota", quota),
+                    ("Nome", nome), ("CPF", cpf), ("Sexo", sexo), ("Modalidade", modalidade), ("Quota", quota), ("Candidato à Bolsa", candidato_bolsa),
                     ("Email", email), ("Data de Nascimento", data_nascimento.strftime('%d/%m/%Y')),
                     ("Ano de Conclusão", ano_conclusao), ("Linha Selecionada", linha)
                 ]]
