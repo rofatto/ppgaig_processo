@@ -30,14 +30,14 @@ with aba1:
     quota = st.selectbox("Tipo de Quota", ["Ampla Concorrência", "Pretos, Pardos, Indígenas", "Pessoas com Deficiência", "Pessoas sob políticas humanitárias no Brasil"], index=["Ampla Concorrência", "Pretos, Pardos, Indígenas", "Pessoas com Deficiência", "Pessoas sob políticas humanitárias no Brasil"].index(st.session_state.get('quota', "Ampla Concorrência")))
 # Campo adicional: Candidato a bolsa
     if modalidade == "Regular":
-    candidato_bolsa = st.radio(
-        "Deseja concorrer à bolsa?",
-        ["Sim", "Não"],
-        index=["Sim", "Não"].index(st.session_state.get('candidato_bolsa', "Sim"))
-    )
-else:
-    candidato_bolsa = "Não"  # Aluno especial não pode concorrer a bolsa
-    st.session_state['candidato_bolsa'] = candidato_bolsa  # Garante que sempre fique "Não"
+        candidato_bolsa = st.radio(
+            "Deseja concorrer à bolsa?",
+            ["Sim", "Não"],
+            index=["Sim", "Não"].index(st.session_state.get('candidato_bolsa', "Sim"))
+        )
+    else:
+        candidato_bolsa = "Não"  # Aluno especial não pode concorrer a bolsa
+        st.session_state['candidato_bolsa'] = candidato_bolsa  # Garante que sempre fique "Não"
 
     identidade_pdf = st.file_uploader("Documento de identidade (com CPF ou RG e CPF separados, mas mesclados em um único PDF) *", type="pdf")
     registro_civil_pdf = st.file_uploader("Registro civil (nascimento ou casamento) *", type="pdf")
